@@ -8,5 +8,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["api/**/*.ts", "src/**/*.ts", "scripts/**/*.mjs"]
+  "include": ["api/**/*.ts", "src/**/*.ts", "scripts/**/*.ts", "scripts/**/*.mjs"]
 }
