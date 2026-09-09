@@ -25,3 +25,5 @@ jobs:
         run: npm run typecheck
       - name: MCP smoke tests
         run: npm run test:mcp
+      - name: OAuth PKCE smoke tests
+        run: npm run test:oauth

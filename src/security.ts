@@ -1,19 +1,29 @@
+import { oauthBase, verifyAccessToken } from "./oauth.js";
+
 const DEFAULT_RATE_LIMIT = 60;
 const windows = new Map<string, { count: number; resetAt: number }>();
 
-export type AuthDecision = { ok: true } | { ok: false; status: number; error: string };
+export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[] } | { ok: false; status: number; error: string };
 
 export function authorizeRequest(request: Request): AuthDecision {
-  const token = process.env.GAME_SHOP_MCP_TOKEN?.trim();
+  const gatewayToken = process.env.GAME_SHOP_MCP_TOKEN?.trim();
   const production = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
-  if (!token) {
+  const provided = request.headers.get("authorization")?.trim();
+  if (gatewayToken && provided === `Bearer ${gatewayToken}`) return { ok: true, mode: "gateway" };
+  if (provided?.startsWith("Bearer ")) {
+    try {
+      const payload = verifyAccessToken(provided.slice(7), oauthBase(request));
+      return { ok: true, mode: "oauth", scopes: payload.scope.split(/\s+/).filter(Boolean) };
+    } catch {}
+  }
+  if (!gatewayToken && !process.env.GAME_SHOP_OAUTH_SIGNING_SECRET?.trim()) {
     if (production) return { ok: false, status: 503, error: "Gateway authentication is not configured." };
     return { ok: true };
   }
-  const provided = request.headers.get("authorization");
-  if (provided !== `Bearer ${token}`) return { ok: false, status: 401, error: "Unauthorized" };
-  return { ok: true };
+  return { ok: false, status: 401, error: "Unauthorized" };
 }
+
+export function oauthChallenge(request:Request){const base=oauthBase(request);return `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;}
 
 function clientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();

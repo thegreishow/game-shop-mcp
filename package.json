@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test:mcp": "tsx scripts/smoke.ts",
-    "test": "npm run typecheck && npm run test:mcp"
+    "test:oauth": "tsx scripts/oauth-smoke.ts",
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
