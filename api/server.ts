@@ -1,11 +1,15 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
+import { capabilityCatalog } from "../src/catalog.js";
 import {
   autoSpriteCreateCharacter,
   autoSpriteGenerateAnimations,
   autoSpriteGetJob,
   autoSpriteGetSpritesheet,
   providerStatus,
+  spriteCookGenerate,
+  spriteCookGetJob,
+  spriteCookListModels,
 } from "../src/providers.js";
 
 function asResult(data: unknown) {
@@ -32,6 +36,17 @@ const handler = createMcpHandler((server) => {
       inputSchema: z.object({}),
     },
     async () => asResult({ providers: providerStatus() }),
+  );
+
+  server.registerTool(
+    "gameshop_capability_catalog",
+    {
+      title: "Game Shop Capability Catalog",
+      description: "List build capabilities available to Game Shop agents, including React Bits, Anime.js, game-art providers and model gateways.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => asResult(capabilityCatalog()),
   );
 
   server.registerTool(
@@ -127,6 +142,88 @@ const handler = createMcpHandler((server) => {
       }
     },
   );
+
+  server.registerTool(
+    "gameshop_spritecook_models",
+    {
+      title: "List SpriteCook Models",
+      description: "List the currently available SpriteCook generation models without creating an asset.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async () => {
+      try {
+        return asResult(await spriteCookListModels());
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "gameshop_spritecook_generate",
+    {
+      title: "Generate Game Art with SpriteCook",
+      description: "Start a SpriteCook game-art generation job. This is a paid generation action and may consume provider credits.",
+      inputSchema: z.object({
+        prompt: z.string().min(1).max(2000),
+        mode: z.enum(["assets", "texture", "ui"]).optional(),
+        model: z.string().min(1).optional(),
+        resolution: z.enum(["1K", "2K", "4K"]).optional(),
+        quality: z.enum(["low", "medium", "high"]).optional(),
+        colors: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/)).max(64).optional(),
+        referenceAssetId: z.string().optional(),
+        editAssetId: z.string().optional(),
+        projectId: z.string().optional(),
+      }),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (input) => {
+      try {
+        return asResult(await spriteCookGenerate(input));
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "gameshop_spritecook_status",
+    {
+      title: "Check SpriteCook Job",
+      description: "Check a SpriteCook generation job without starting another paid generation.",
+      inputSchema: z.object({ jobId: z.string().min(1) }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ jobId }) => {
+      try {
+        return asResult(await spriteCookGetJob(jobId));
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+  );
 });
 
-export { handler as GET, handler as POST, handler as DELETE };
+function isAuthorized(request: Request) {
+  const token = process.env.GAME_SHOP_MCP_TOKEN;
+  if (!token) return true;
+  return request.headers.get("authorization") === `Bearer ${token}`;
+}
+
+async function route(request: Request) {
+  if (!isAuthorized(request)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return handler(request);
+}
+
+export { route as GET, route as POST, route as DELETE };
