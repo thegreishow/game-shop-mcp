@@ -1,0 +1,20 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs/promises";
+import path from "node:path";
+const exec=promisify(execFile);const out=path.resolve(".gameshop-chrome");
+function target(){const value=process.env.GAME_SHOP_CHROME_TARGET_URL;if(!value)throw new Error("GAME_SHOP_CHROME_TARGET_URL is required.");const u=new URL(value);if(u.protocol!=="https:")throw new Error("Chrome diagnostics target must use HTTPS.");return u.toString();}
+async function cli(args:string[],tolerate=false){try{const {stdout,stderr}=await exec("chrome-devtools",[...args,"--output-format=json"],{timeout:120000,maxBuffer:8*1024*1024});let parsed:unknown=stdout;try{parsed=stdout.trim()?JSON.parse(stdout):null}catch{}return{ok:true,data:parsed,stderr:stderr||null};}catch(error){if(!tolerate)throw error;return{ok:false,error:error instanceof Error?error.message:String(error)};}}
+function findPageId(value:unknown):number|undefined{if(Array.isArray(value)){for(const v of value){const found=findPageId(v);if(found!==undefined)return found;}}else if(value&&typeof value==="object"){const r=value as Record<string,unknown>;for(const key of ["pageId","id","page_id"]){const n=Number(r[key]);if(Number.isInteger(n)&&n>=0)return n;}for(const v of Object.values(r)){const found=findPageId(v);if(found!==undefined)return found;}}else if(typeof value==="string"){const m=value.match(/(?:page(?:Id)?|id)\D{0,8}(\d+)/i);if(m)return Number(m[1]);}return undefined;}
+async function main(){await fs.mkdir(out,{recursive:true});const url=target();const startedAt=new Date().toISOString();const opened=await cli(["new_page",url]);let pageId=findPageId(opened.data);if(pageId===undefined){const pages=await cli(["list_pages"]);pageId=findPageId(pages.data);await fs.writeFile(path.join(out,"pages.json"),JSON.stringify(pages,null,2));}if(pageId===undefined)throw new Error("Chrome DevTools could not resolve an active page id.");
+ const snapshot=await cli(["take_snapshot",String(pageId),"--verbose","true","--filePath",path.join(out,"snapshot.txt")],true);
+ const screenshot=await cli(["take_screenshot",String(pageId),"--fullPage","true","--filePath",path.join(out,"screenshot.png")],true);
+ const consoleMessages=await cli(["list_console_messages",String(pageId),"--includePreservedMessages","true"],true);
+ const network=await cli(["list_network_requests",String(pageId),"--includePreservedRequests","true"],true);
+ const lighthouse=await cli(["lighthouse_audit",String(pageId),"--mode","navigation"],true);
+ const trace=await cli(["performance_start_trace",String(pageId),"--autoStop","true","--reload","true","--filePath",path.join(out,"trace.json.gz")],true);
+ const title=await cli(["evaluate_script","() => ({title: document.title, href: location.href, readyState: document.readyState})","--pageId",String(pageId)],true);
+ const evidence={schemaVersion:"1.0",url,pageId,projectId:process.env.GAME_SHOP_CHROME_PROJECT_ID||null,executionId:process.env.GAME_SHOP_CHROME_EXECUTION_ID||null,startedAt,finishedAt:new Date().toISOString(),opened,snapshot,screenshot,console:consoleMessages,network,lighthouse,performanceTrace:trace,title};
+ await fs.writeFile(path.join(out,"evidence.json"),JSON.stringify(evidence,null,2));
+ const critical=[opened,snapshot,screenshot,consoleMessages,network].filter(x=>!x.ok);const summary=["# Game Shop Chrome Diagnostics","",`- URL: ${url}`,`- Page ID: ${pageId}`,`- Critical command failures: ${critical.length}`,`- Lighthouse: ${lighthouse.ok?"captured":"unavailable"}`,`- Performance trace: ${trace.ok?"captured":"unavailable"}`,`- Screenshot: ${screenshot.ok?"captured":"unavailable"}`,"",critical.length?"## Failures\n"+critical.map(x=>`- ${"error" in x?x.error:"unknown"}`).join("\n"):"## Result\nCore Chrome diagnostics completed."].join("\n");await fs.writeFile(path.join(out,"summary.md"),summary);if(critical.length)process.exitCode=1;}
+main().catch(async error=>{await fs.mkdir(out,{recursive:true});await fs.writeFile(path.join(out,"fatal.txt"),String(error instanceof Error?error.stack:error));console.error(error);process.exitCode=1;});
