@@ -1,0 +1,72 @@
+name: Game Shop Playwright QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Preview URL to test
+        required: true
+        type: string
+      project_id:
+        description: Game Shop project id
+        required: false
+        type: string
+      execution_id:
+        description: Game Shop execution id
+        required: false
+        type: string
+      interactions_json:
+        description: JSON array of simple QA intents
+        required: false
+        default: '[]'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Playwright MCP
+        run: npm install --no-save @playwright/mcp@latest playwright@latest
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start Playwright MCP HTTP server
+        run: |
+          nohup npx @playwright/mcp@latest --headless --browser chromium --caps=network,testing,devtools --port 8931 > /tmp/playwright-mcp.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8931/mcp >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+      - name: Execute QA contract
+        env:
+          GAME_SHOP_PLAYWRIGHT_MCP_URL: http://127.0.0.1:8931/mcp
+          GAME_SHOP_QA_TARGET_URL: ${{ inputs.target_url }}
+          GAME_SHOP_QA_PROJECT_ID: ${{ inputs.project_id }}
+          GAME_SHOP_QA_EXECUTION_ID: ${{ inputs.execution_id }}
+          GAME_SHOP_QA_INTERACTIONS_JSON: ${{ inputs.interactions_json }}
+        run: npx tsx scripts/playwright-ci-qa.ts
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gameshop-playwright-qa
+          path: .gameshop-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload MCP logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-mcp-log
+          path: /tmp/playwright-mcp.log
+          if-no-files-found: ignore
+          retention-days: 7
