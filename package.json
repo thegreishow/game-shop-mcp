@@ -7,7 +7,6 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vercel dev",
     "typecheck": "tsc --noEmit",
     "test:mcp": "node scripts/test-client.mjs"
   },
