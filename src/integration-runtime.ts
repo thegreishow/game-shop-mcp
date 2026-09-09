@@ -40,7 +40,8 @@ function endpointMode(integration: Integration) {
 }
 
 export function integrationReadiness(id?: string) {
-  const items = id ? [integrationStatus(id)].filter(Boolean) as Integration[] : integrationRegistry();
+  const found = id ? integrationStatus(id) : null;
+  const items: Integration[] = id ? (found && !Array.isArray(found) ? [found] : []) : integrationRegistry();
   return items.map((integration) => {
     const env = configuredEnv(integration);
     const mode = endpointMode(integration);
@@ -148,7 +149,8 @@ async function initializeMcp(integration: Integration, timeoutMs: number) {
 }
 
 export async function invokeIntegration(input: IntegrationInvokeInput) {
-  const integration = integrationStatus(input.id);
+  const found = integrationStatus(input.id);
+  const integration = found && !Array.isArray(found) ? found : null;
   if (!integration) throw new Error(`Unknown integration: ${input.id}.`);
   assertCallable(integration);
   const timeoutMs = Math.max(1_000, Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, 60_000));
