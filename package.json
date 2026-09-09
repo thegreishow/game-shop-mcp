@@ -9,6 +9,7 @@
     "test:mcp": "tsx scripts/smoke.ts",
     "test:oauth": "tsx scripts/oauth-smoke.ts",
     "verify:oauth-live": "tsx scripts/verify-oauth-live.ts",
+    "verify:oauth-runtime-live": "tsx scripts/oauth-live-smoke.ts",
     "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
   },
   "dependencies": {
