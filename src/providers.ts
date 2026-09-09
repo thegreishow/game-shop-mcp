@@ -53,7 +53,7 @@ async function readJson(response: Response) {
 export async function autoSpriteCreateCharacter(input: {
   name: string;
   prompt: string;
-  quality?: "draft" | "standard" | "premium";
+  quality?: "turbo" | "pro";
   isHumanoid?: boolean;
 }) {
   const key = process.env.AUTOSPRITE_API_KEY;
@@ -68,8 +68,9 @@ export async function autoSpriteCreateCharacter(input: {
     body: JSON.stringify({
       name: input.name,
       prompt: input.prompt,
-      quality: input.quality,
+      quality: input.quality ?? "turbo",
       isHumanoid: input.isHumanoid ?? true,
+      usePromptTemplate: true,
     }),
   });
   return readJson(response);
