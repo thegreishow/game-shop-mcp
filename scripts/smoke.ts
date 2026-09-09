@@ -26,6 +26,7 @@ async function main() {
   process.env.GAME_SHOP_MCP_TOKEN = "smoke-token";
   delete process.env.GAME_SHOP_ALLOW_PAID_GENERATION;
   delete process.env.GAME_SHOP_ALLOW_GITHUB_WRITES;
+  delete process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS;
 
   const anime = await import("animejs");
   assert.equal(typeof anime.animate, "function", "Anime.js runtime must resolve and expose animate()");
@@ -42,6 +43,7 @@ async function main() {
   const names = new Set(tools.map((tool: { name: string }) => tool.name));
   for (const required of [
     "gameshop_spend_policy", "gameshop_capability_catalog", "gameshop_integrations", "gameshop_integration_status",
+    "gameshop_integration_readiness", "gameshop_invoke_integration", "gameshop_orchestrate_integrations",
     "gameshop_plan_build", "gameshop_list_projects", "gameshop_project_context",
     "gameshop_inspect_project", "gameshop_plan_project", "gameshop_create_project_branch", "gameshop_github_read_file",
     "gameshop_github_upsert_file", "gameshop_verify_project_branch", "gameshop_create_project_pr",
@@ -60,22 +62,30 @@ async function main() {
     "motion-so", "contextcore", "bklit-ui",
   ]) assert.match(integrationText, new RegExp(id), `missing integration contract: ${id}`);
 
-  const projects = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
+  const readiness = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_integration_readiness", arguments: { id: "motion-so" } } }, session);
+  assert.match(JSON.stringify(readiness.body?.result?.structuredContent), /remote-mcp/);
+  assert.match(JSON.stringify(readiness.body?.result?.structuredContent), /externallyEnabled/);
+
+  const externalBlocked = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_invoke_integration", arguments: { id: "motion-so", mode: "mcp-list-tools" } } }, session);
+  assert.equal(externalBlocked.body?.result?.isError, true, "live integration calls must be locked by default");
+  assert.match(externalBlocked.body?.result?.content?.[0]?.text ?? "", /Game Shop request failed/);
+
+  const projects = await rpc({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
   const projectList = projects.body?.result?.structuredContent ?? [];
   const serialized = JSON.stringify(projectList);
   for (const id of ["dubai-legends", "dreamweaver-oracle", "rodeo"]) assert.match(serialized, new RegExp(id));
 
-  const projectPlan = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_plan_project", arguments: { projectId: "dubai-legends", goal: "Improve player motion and stability" } } }, session);
+  const projectPlan = await rpc({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "gameshop_plan_project", arguments: { projectId: "dubai-legends", goal: "Improve player motion and stability" } } }, session);
   assert.equal(projectPlan.body?.result?.isError, undefined, "project planning should be read-only and available without GitHub credentials");
   assert.match(JSON.stringify(projectPlan.body?.result?.structuredContent), /arcade\/games\/dubai-legends/);
 
-  const spend = await rpc({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
+  const spend = await rpc({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
   assert.equal(spend.body?.result?.structuredContent?.allowPaidGeneration, false);
-  const blocked = await rpc({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
+  const blocked = await rpc({ jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
   assert.equal(blocked.body?.result?.isError, true);
   assert.match(blocked.body?.result?.content?.[0]?.text ?? "", /Paid generation is disabled/);
 
-  console.log(`MCP smoke OK: ${tools.length} tools; Anime.js, expanded MCP/API registry, ecosystem catalog, project planning, auth and spend lock verified.`);
+  console.log(`MCP smoke OK: ${tools.length} tools; Anime.js, active MCP/API invocation, orchestration locks, project planning, auth and spend lock verified.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
