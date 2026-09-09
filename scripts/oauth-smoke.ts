@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { createHash, randomBytes } from "node:crypto";
+import { createAuthorizationCode, exchangeAuthorizationCode, oauthMetadata, protectedResourceMetadata, verifyAccessToken } from "../src/oauth.js";
+
+process.env.GAME_SHOP_OAUTH_SIGNING_SECRET="test-signing-secret-32-bytes-minimum-value";
+const issuer="https://game-shop-mcp.vercel.app";
+const clientId="game-shop-grok-web";
+const redirectUri="https://grok.com/connectors/oauth/callback";
+const verifier=randomBytes(32).toString("base64url");
+const challenge=createHash("sha256").update(verifier).digest("base64url");
+const code=createAuthorizationCode({issuer,clientId,redirectUri,scope:"gameshop.read gameshop.qa",codeChallenge:challenge});
+const token=exchangeAuthorizationCode({code,clientId,redirectUri,codeVerifier:verifier,issuer});
+assert.equal(token.token_type,"Bearer");
+assert.match(token.scope,/gameshop\.read/);
+const claims=verifyAccessToken(token.access_token,issuer);
+assert.equal(claims.client_id,clientId);
+assert.equal(claims.aud,`${issuer}/mcp`);
+assert.equal(oauthMetadata(issuer).code_challenge_methods_supported[0],"S256");
+assert.equal(protectedResourceMetadata(issuer).resource,`${issuer}/mcp`);
+assert.throws(()=>exchangeAuthorizationCode({code,clientId,redirectUri,codeVerifier:"wrong",issuer}),/PKCE/);
+console.log("OAuth PKCE smoke OK");
