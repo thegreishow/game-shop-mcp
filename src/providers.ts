@@ -1,218 +1,27 @@
+import { ProviderRequestError } from "./errors.js";
 import { assertPaidGenerationAllowed } from "./spend.js";
 
-export type ProviderName =
-  | "spriteship"
-  | "autosprite"
-  | "sprite-ai"
-  | "spritesheet-ai"
-  | "spritecook"
-  | "aimlapi"
-  | "deepseek";
+export type ProviderName = "spriteship"|"autosprite"|"sprite-ai"|"spritesheet-ai"|"spritecook"|"aimlapi"|"deepseek";
+export type ProviderInfo = { name:ProviderName; purpose:string; configured:boolean; integration:"rest"|"mcp"|"rest+mcp"|"planned"; adapterImplemented:boolean; toolExposed:boolean; paidCalls:"blocked-by-default"|"planned" };
 
-export type ProviderInfo = {
-  name: ProviderName;
-  purpose: string;
-  configured: boolean;
-  integration: "rest" | "mcp" | "rest+mcp" | "planned";
-  paidCalls: "blocked-by-default" | "planned";
-};
+export function providerStatus():ProviderInfo[]{return[
+{name:"spriteship",purpose:"Primary game-art and animation pipeline",configured:Boolean(process.env.SPRITESHIP_API_KEY),integration:"planned",adapterImplemented:false,toolExposed:false,paidCalls:"blocked-by-default"},
+{name:"autosprite",purpose:"Character generation and Phaser-ready sprite sheets",configured:Boolean(process.env.AUTOSPRITE_API_KEY),integration:"rest",adapterImplemented:true,toolExposed:true,paidCalls:"blocked-by-default"},
+{name:"sprite-ai",purpose:"2D and pixel-art sprite generation, animation, restyling and maps",configured:Boolean(process.env.SPRITE_AI_API_KEY),integration:"planned",adapterImplemented:false,toolExposed:false,paidCalls:"blocked-by-default"},
+{name:"spritesheet-ai",purpose:"Aligned multi-animation spritesheets and engine-ready exports",configured:Boolean(process.env.SPRITESHEET_AI_API_KEY),integration:"planned",adapterImplemented:false,toolExposed:false,paidCalls:"planned"},
+{name:"spritecook",purpose:"Game art, characters, animation, tilesets, UI, textures and background removal",configured:Boolean(process.env.SPRITECOOK_API_KEY),integration:"rest",adapterImplemented:true,toolExposed:true,paidCalls:"blocked-by-default"},
+{name:"aimlapi",purpose:"General AI model gateway for image, video, audio, and text models",configured:Boolean(process.env.AIMLAPI_API_KEY),integration:"planned",adapterImplemented:false,toolExposed:false,paidCalls:"blocked-by-default"},
+{name:"deepseek",purpose:"Coding and reasoning provider",configured:Boolean(process.env.DEEPSEEK_API_KEY),integration:"planned",adapterImplemented:false,toolExposed:false,paidCalls:"blocked-by-default"},
+]}
 
-export function providerStatus(): ProviderInfo[] {
-  return [
-    {
-      name: "spriteship",
-      purpose: "Primary game-art and animation pipeline",
-      configured: Boolean(process.env.SPRITESHIP_API_KEY),
-      integration: "rest+mcp",
-      paidCalls: "blocked-by-default",
-    },
-    {
-      name: "autosprite",
-      purpose: "Character generation and Phaser-ready sprite sheets",
-      configured: Boolean(process.env.AUTOSPRITE_API_KEY),
-      integration: "rest+mcp",
-      paidCalls: "blocked-by-default",
-    },
-    {
-      name: "sprite-ai",
-      purpose: "2D and pixel-art sprite generation, animation, restyling and maps",
-      configured: Boolean(process.env.SPRITE_AI_API_KEY),
-      integration: "rest+mcp",
-      paidCalls: "blocked-by-default",
-    },
-    {
-      name: "spritesheet-ai",
-      purpose: "Aligned multi-animation spritesheets and engine-ready exports",
-      configured: Boolean(process.env.SPRITESHEET_AI_API_KEY),
-      integration: "planned",
-      paidCalls: "planned",
-    },
-    {
-      name: "spritecook",
-      purpose: "Game art, characters, animation, tilesets, UI, textures and background removal",
-      configured: Boolean(process.env.SPRITECOOK_API_KEY),
-      integration: "rest+mcp",
-      paidCalls: "blocked-by-default",
-    },
-    {
-      name: "aimlapi",
-      purpose: "General AI model gateway for image, video, audio, and text models",
-      configured: Boolean(process.env.AIMLAPI_API_KEY),
-      integration: "rest",
-      paidCalls: "blocked-by-default",
-    },
-    {
-      name: "deepseek",
-      purpose: "Coding and reasoning provider",
-      configured: Boolean(process.env.DEEPSEEK_API_KEY),
-      integration: "rest",
-      paidCalls: "blocked-by-default",
-    },
-  ];
-}
+const PROVIDER_TIMEOUT_MS=Number(process.env.GAME_SHOP_PROVIDER_TIMEOUT_MS??12_000);
+async function providerFetch(provider:string,url:string,init:RequestInit={}){const response=await fetch(url,{...init,signal:AbortSignal.timeout(PROVIDER_TIMEOUT_MS)});const text=await response.text();let body:unknown=text;try{body=text?JSON.parse(text):null}catch{}if(!response.ok){console.error("Provider request failed",{provider,status:response.status});throw new ProviderRequestError(provider,response.status)}return body}
 
-async function readJson(response: Response) {
-  const text = await response.text();
-  let body: unknown = text;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    // Preserve provider text for diagnostics.
-  }
-  if (!response.ok) {
-    throw new Error(`Provider request failed (${response.status}): ${typeof body === "string" ? body : JSON.stringify(body)}`);
-  }
-  return body;
-}
-
-export async function autoSpriteCreateCharacter(input: {
-  name: string;
-  prompt: string;
-  quality?: "turbo" | "pro";
-  isHumanoid?: boolean;
-}) {
-  assertPaidGenerationAllowed("autosprite.createCharacter");
-  const key = process.env.AUTOSPRITE_API_KEY;
-  if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
-
-  const response = await fetch("https://www.autosprite.io/api/v1/characters", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      name: input.name,
-      prompt: input.prompt,
-      quality: input.quality ?? "turbo",
-      isHumanoid: input.isHumanoid ?? true,
-      usePromptTemplate: true,
-    }),
-  });
-  return readJson(response);
-}
-
-export async function autoSpriteGenerateAnimations(input: {
-  characterId: string;
-  animations: Array<{ kind: string; name?: string; prompt?: string }>;
-  videoTier?: "turbo" | "pro" | "ultra" | "max";
-  frameCount?: number;
-  frameSize?: number;
-  removeBg?: "default" | "ultra";
-}) {
-  assertPaidGenerationAllowed("autosprite.generateAnimations");
-  const key = process.env.AUTOSPRITE_API_KEY;
-  if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
-
-  const response = await fetch(
-    `https://www.autosprite.io/api/v1/characters/${encodeURIComponent(input.characterId)}/spritesheets`,
-    {
-      method: "POST",
-      headers: {
-        "x-api-key": key,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        animations: input.animations,
-        videoTier: input.videoTier ?? "turbo",
-        frameCount: input.frameCount ?? 25,
-        frameSize: input.frameSize ?? 256,
-        removeBg: input.removeBg ?? "ultra",
-      }),
-    },
-  );
-  return readJson(response);
-}
-
-export async function autoSpriteGetJob(jobId: string) {
-  const key = process.env.AUTOSPRITE_API_KEY;
-  if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
-  const response = await fetch(`https://www.autosprite.io/api/v1/jobs/${encodeURIComponent(jobId)}`, {
-    headers: { "x-api-key": key },
-  });
-  return readJson(response);
-}
-
-export async function autoSpriteGetSpritesheet(spritesheetId: string) {
-  const key = process.env.AUTOSPRITE_API_KEY;
-  if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
-  const response = await fetch(`https://www.autosprite.io/api/v1/spritesheets/${encodeURIComponent(spritesheetId)}`, {
-    headers: { "x-api-key": key },
-  });
-  return readJson(response);
-}
-
-function spriteCookHeaders() {
-  const key = process.env.SPRITECOOK_API_KEY;
-  if (!key) throw new Error("SPRITECOOK_API_KEY is not configured");
-  return {
-    Authorization: `Bearer ${key}`,
-    "content-type": "application/json",
-  };
-}
-
-export async function spriteCookListModels() {
-  const response = await fetch("https://api.spritecook.ai/v1/api/models", {
-    headers: spriteCookHeaders(),
-  });
-  return readJson(response);
-}
-
-export async function spriteCookGenerate(input: {
-  prompt: string;
-  mode?: "assets" | "texture" | "ui";
-  model?: string;
-  resolution?: "1K" | "2K" | "4K";
-  quality?: "low" | "medium" | "high";
-  colors?: string[];
-  referenceAssetId?: string;
-  editAssetId?: string;
-  projectId?: string;
-}) {
-  assertPaidGenerationAllowed("spritecook.generate");
-  const body: Record<string, unknown> = {
-    prompt: input.prompt,
-    mode: input.mode ?? "assets",
-    resolution: input.resolution ?? "1K",
-  };
-  if (input.model) body.model = input.model;
-  if (input.quality) body.quality = input.quality;
-  if (input.colors) body.colors = input.colors;
-  if (input.referenceAssetId) body.reference_asset_id = input.referenceAssetId;
-  if (input.editAssetId) body.edit_asset_id = input.editAssetId;
-  if (input.projectId) body.project_id = input.projectId;
-
-  const response = await fetch("https://api.spritecook.ai/v1/api/generate", {
-    method: "POST",
-    headers: spriteCookHeaders(),
-    body: JSON.stringify(body),
-  });
-  return readJson(response);
-}
-
-export async function spriteCookGetJob(jobId: string) {
-  const response = await fetch(`https://api.spritecook.ai/v1/api/jobs/${encodeURIComponent(jobId)}`, {
-    headers: spriteCookHeaders(),
-  });
-  return readJson(response);
-}
+export async function autoSpriteCreateCharacter(input:{name:string;prompt:string;quality?:"turbo"|"pro";isHumanoid?:boolean}){assertPaidGenerationAllowed("autosprite.createCharacter");const key=process.env.AUTOSPRITE_API_KEY;if(!key)throw new Error("AUTOSPRITE_API_KEY is not configured");return providerFetch("AutoSprite","https://www.autosprite.io/api/v1/characters",{method:"POST",headers:{"x-api-key":key,"content-type":"application/json"},body:JSON.stringify({name:input.name,prompt:input.prompt,quality:input.quality??"turbo",isHumanoid:input.isHumanoid??true,usePromptTemplate:true})})}
+export async function autoSpriteGenerateAnimations(input:{characterId:string;animations:Array<{kind:string;name?:string;prompt?:string}>;videoTier?:"turbo"|"pro"|"ultra"|"max";frameCount?:number;frameSize?:number;removeBg?:"default"|"ultra"}){assertPaidGenerationAllowed("autosprite.generateAnimations");const key=process.env.AUTOSPRITE_API_KEY;if(!key)throw new Error("AUTOSPRITE_API_KEY is not configured");return providerFetch("AutoSprite",`https://www.autosprite.io/api/v1/characters/${encodeURIComponent(input.characterId)}/spritesheets`,{method:"POST",headers:{"x-api-key":key,"content-type":"application/json"},body:JSON.stringify({animations:input.animations,videoTier:input.videoTier??"turbo",frameCount:input.frameCount??25,frameSize:input.frameSize??256,removeBg:input.removeBg??"ultra"})})}
+export async function autoSpriteGetJob(jobId:string){const key=process.env.AUTOSPRITE_API_KEY;if(!key)throw new Error("AUTOSPRITE_API_KEY is not configured");return providerFetch("AutoSprite",`https://www.autosprite.io/api/v1/jobs/${encodeURIComponent(jobId)}`,{headers:{"x-api-key":key}})}
+export async function autoSpriteGetSpritesheet(spritesheetId:string){const key=process.env.AUTOSPRITE_API_KEY;if(!key)throw new Error("AUTOSPRITE_API_KEY is not configured");return providerFetch("AutoSprite",`https://www.autosprite.io/api/v1/spritesheets/${encodeURIComponent(spritesheetId)}`,{headers:{"x-api-key":key}})}
+function spriteCookHeaders(){const key=process.env.SPRITECOOK_API_KEY;if(!key)throw new Error("SPRITECOOK_API_KEY is not configured");return{Authorization:`Bearer ${key}`,"content-type":"application/json"}}
+export async function spriteCookListModels(){return providerFetch("SpriteCook","https://api.spritecook.ai/v1/api/models",{headers:spriteCookHeaders()})}
+export async function spriteCookGenerate(input:{prompt:string;mode?:"assets"|"texture"|"ui";model?:string;resolution?:"1K"|"2K"|"4K";quality?:"low"|"medium"|"high";colors?:string[];referenceAssetId?:string;editAssetId?:string;projectId?:string}){assertPaidGenerationAllowed("spritecook.generate");const body:Record<string,unknown>={prompt:input.prompt,mode:input.mode??"assets",resolution:input.resolution??"1K"};if(input.model)body.model=input.model;if(input.quality)body.quality=input.quality;if(input.colors)body.colors=input.colors;if(input.referenceAssetId)body.reference_asset_id=input.referenceAssetId;if(input.editAssetId)body.edit_asset_id=input.editAssetId;if(input.projectId)body.project_id=input.projectId;return providerFetch("SpriteCook","https://api.spritecook.ai/v1/api/generate",{method:"POST",headers:spriteCookHeaders(),body:JSON.stringify(body)})}
+export async function spriteCookGetJob(jobId:string){return providerFetch("SpriteCook",`https://api.spritecook.ai/v1/api/jobs/${encodeURIComponent(jobId)}`,{headers:spriteCookHeaders()})}
