@@ -41,8 +41,8 @@ const handler = createMcpHandler((server) => {
       description: "Create a new game character using AutoSprite. This is a paid generation action and may consume provider credits.",
       inputSchema: z.object({
         name: z.string().min(1).max(100),
-        prompt: z.string().min(1).max(2000),
-        quality: z.enum(["draft", "standard", "premium"]).optional(),
+        prompt: z.string().min(1).max(600),
+        quality: z.enum(["turbo", "pro"]).optional(),
         isHumanoid: z.boolean().optional(),
       }),
       annotations: {
