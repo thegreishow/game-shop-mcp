@@ -11,6 +11,7 @@ import {
   spriteCookGetJob,
   spriteCookListModels,
 } from "../src/providers.js";
+import { routeCapability, routingMatrix } from "../src/router.js";
 import { spendPolicy } from "../src/spend.js";
 
 function asResult(data: unknown) {
@@ -60,6 +61,43 @@ const handler = createMcpHandler((server) => {
       annotations: { readOnlyHint: true },
     },
     async () => asResult(capabilityCatalog()),
+  );
+
+  server.registerTool(
+    "gameshop_route_capability",
+    {
+      title: "Route Game Shop Capability",
+      description: "Choose the best configured and implemented provider for a requested game-art capability using Game Shop routing preferences.",
+      inputSchema: z.object({
+        capability: z.enum([
+          "character",
+          "character-animation",
+          "spritesheet",
+          "pixel-art",
+          "ui-art",
+          "texture",
+          "tileset",
+          "background-removal",
+          "general-game-art",
+        ]),
+        preference: z.enum(["quality", "speed", "cost", "balanced"]).optional(),
+        requireConfigured: z.boolean().optional(),
+        requireImplemented: z.boolean().optional(),
+      }),
+      annotations: { readOnlyHint: true },
+    },
+    async (input) => asResult(routeCapability(input)),
+  );
+
+  server.registerTool(
+    "gameshop_routing_matrix",
+    {
+      title: "Game Shop Routing Matrix",
+      description: "Inspect provider capability coverage and routing weights used by the Game Shop router.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => asResult(routingMatrix()),
   );
 
   server.registerTool(
