@@ -1,0 +1,33 @@
+name: OAuth Live Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Public Game Shop base URL
+        required: true
+        default: https://game-shop-mcp.vercel.app
+
+permissions:
+  contents: read
+
+jobs:
+  verify-oauth-live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify OAuth discovery
+        env:
+          GAME_SHOP_PUBLIC_URL: ${{ inputs.base_url }}
+        run: npm run verify:oauth-live
+      - name: Verify OAuth runtime readiness
+        env:
+          GAME_SHOP_PUBLIC_URL: ${{ inputs.base_url }}
+        run: npm run verify:oauth-runtime-live
