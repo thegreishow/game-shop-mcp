@@ -68,7 +68,7 @@ async function main() {
 
   const externalBlocked = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_invoke_integration", arguments: { id: "motion-so", mode: "mcp-list-tools" } } }, session);
   assert.equal(externalBlocked.body?.result?.isError, true, "live integration calls must be locked by default");
-  assert.match(externalBlocked.body?.result?.content?.[0]?.text ?? "", /External integrations are disabled/);
+  assert.match(externalBlocked.body?.result?.content?.[0]?.text ?? "", /Game Shop request failed/);
 
   const projects = await rpc({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
   const projectList = projects.body?.result?.structuredContent ?? [];
