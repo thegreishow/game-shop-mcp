@@ -1,3 +1,4 @@
+import { ecosystemCatalog } from "./ecosystem-catalog.js";
 import { spendPolicy } from "./spend.js";
 
 export const buildCapabilities = {
@@ -21,11 +22,13 @@ export const buildCapabilities = {
     },
     animejs: {
       name: "Anime.js",
-      kind: "animation-library",
+      kind: "installed-animation-library",
       package: "animejs",
+      version: "^4.5.0",
       preferredMajor: 4,
       capabilities: ["DOM", "CSS", "SVG", "JS objects", "timelines", "draggable", "scroll", "WAAPI", "React scopes"],
-      install: "npm install animejs",
+      install: "npm install animejs@4.5.0",
+      projectRuntime: "Use Anime.js in target browser projects for UI/HUD choreography; do not use it as a replacement for the game simulation/render loop.",
     },
   },
   gameArt: ["spriteship", "autosprite", "sprite-ai", "spritesheet-ai", "spritecook"],
@@ -35,6 +38,7 @@ export const buildCapabilities = {
 export function capabilityCatalog() {
   return {
     ...buildCapabilities,
+    ecosystem: ecosystemCatalog(),
     spend: spendPolicy(),
   };
 }
