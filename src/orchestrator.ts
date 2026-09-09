@@ -1,0 +1,27 @@
+import { getArtifact, listArtifacts, updateArtifact, type GameShopArtifact } from "./artifacts.js";
+import { persistArtifactObject } from "./artifact-storage.js";
+import { placeArtifactInProject } from "./artifact-placement.js";
+import { createRepairPlan, verifyProject, type VerificationCheck } from "./verification.js";
+import { getProject } from "./projects.js";
+
+export type OrchestrationState="waiting"|"persisting"|"persisted"|"placing"|"placed"|"verifying"|"repair_required"|"completed"|"failed";
+export type OrchestrationPolicy={autoPersist?:boolean;autoPlace?:boolean;autoVerify?:boolean;autoRepair?:boolean;branch?:string;path?:string;checks?:VerificationCheck[]};
+function metadata(a:GameShopArtifact){return (a.metadata.orchestration??{}) as Record<string,unknown>;}
+function targetPath(a:GameShopArtifact,policy:OrchestrationPolicy){if(policy.path)return policy.path;const configured=metadata(a).targetPath;if(typeof configured==="string")return configured;return undefined;}
+async function mark(a:GameShopArtifact,state:OrchestrationState,extra:Record<string,unknown>={}){return updateArtifact(a.artifactId,{metadata:{orchestration:{...metadata(a),state,...extra,updatedAt:new Date().toISOString()}}});}
+export async function orchestrateArtifact(input:{artifactId:string;policy?:OrchestrationPolicy}){
+ const policy={autoPersist:true,autoPlace:true,autoVerify:true,autoRepair:false,...input.policy};let artifact=await getArtifact(input.artifactId);if(!artifact)throw new Error("Artifact not found.");
+ if(artifact.status==="failed"){await mark(artifact,"failed",{reason:"provider-failed"});return{status:"failed",artifact};}
+ if(artifact.status!=="ready"){await mark(artifact,"waiting",{reason:"provider-not-terminal"});return{status:"waiting",artifact};}
+ const events:Array<Record<string,unknown>>=[];
+ try{
+  if(policy.autoPersist&&!artifact.storageUrl){await mark(artifact,"persisting");const persisted=await persistArtifactObject({artifactId:artifact.artifactId});artifact=persisted.artifact??artifact;events.push({stage:"persist",status:"completed",storage:persisted.storage});await mark(artifact,"persisted");}
+  const path=targetPath(artifact,policy);const projectId=artifact.projectId;let branch=policy.branch;
+  if(projectId&&path&&policy.autoPlace){const project=getProject(projectId);branch=branch??`gameshop/auto-${artifact.executionId.slice(0,18).replace(/[^a-zA-Z0-9_-]/g,"-")}`;await mark(artifact,"placing",{projectId,path,branch});const placed=await placeArtifactInProject({artifactId:artifact.artifactId,projectId,path,branch,message:`Auto-place ${artifact.name}`});events.push({stage:"place",status:"completed",path,branch,commitSha:placed.commitSha});artifact=(await getArtifact(artifact.artifactId))??artifact;await mark(artifact,"placed",{projectId,path,branch,commitSha:placed.commitSha,defaultBranch:project.defaultBranch});}
+  if(projectId&&policy.autoVerify){const ref=branch??getProject(projectId).defaultBranch;await mark(artifact,"verifying",{ref});const verification=await verifyProject({projectId,ref,checks:policy.checks??(path?[{path,required:true}]:undefined)});events.push({stage:"verify",status:verification.status,verification});if(verification.status!=="passed"){const repair=createRepairPlan({projectId,verification});await mark(artifact,"repair_required",{verification,repair,repairApproved:false});return{status:"repair_required",artifactId:artifact.artifactId,events,verification,repair,requiresApproval:true};}}
+  artifact=(await getArtifact(artifact.artifactId))??artifact;await mark(artifact,"completed",{completedAt:new Date().toISOString()});return{status:"completed",artifactId:artifact.artifactId,events};
+ }catch(error){const message=error instanceof Error?error.message:String(error);await mark(artifact,"failed",{error:message});return{status:"failed",artifactId:artifact.artifactId,events,error:message};}
+}
+export async function orchestrateReadyArtifacts(input:{executionId?:string;projectId?:string;limit?:number;policy?:OrchestrationPolicy}={}){const artifacts=await listArtifacts({executionId:input.executionId,projectId:input.projectId});const ready=artifacts.filter(a=>a.status==="ready"&&metadata(a).state!=="completed").slice(0,Math.min(25,input.limit??10));const results=[];for(const artifact of ready)results.push(await orchestrateArtifact({artifactId:artifact.artifactId,policy:input.policy}));return{processed:results.length,results};}
+export async function approveArtifactRepair(input:{artifactId:string;approved:boolean}){const artifact=await getArtifact(input.artifactId);if(!artifact)throw new Error("Artifact not found.");const current=metadata(artifact);if(current.state!=="repair_required")throw new Error("Artifact is not awaiting repair approval.");await mark(artifact,"repair_required",{...current,repairApproved:input.approved,repairApprovedAt:new Date().toISOString()});return{artifactId:artifact.artifactId,approved:input.approved,repair:current.repair??null,note:input.approved?"Repair is approved for an execution worker. Mutation remains subject to Game Shop write gates.":"Repair remains blocked."};}
+export async function orchestrationSnapshot(){const artifacts=await listArtifacts();const rows=artifacts.filter(a=>a.metadata.orchestration).slice(0,100).map(a=>({artifactId:a.artifactId,executionId:a.executionId,projectId:a.projectId,name:a.name,status:a.status,orchestration:a.metadata.orchestration}));return{count:rows.length,rows};}
