@@ -14,6 +14,9 @@ export async function executeGitHubPlan(request: ExecuteGitHubRequest) {
   const id = executionId || manifest.executionId;
   const targetProject = manifest.target?.project;
   if (targetProject && targetProject !== projectId) throw new Error("Execution project does not match the prepared target.");
+  const branch = manifest.target?.branch;
+  if (!dryRun && !branch) throw new Error("Real execution requires an explicit gameshop/ target branch.");
+  if (branch && !branch.startsWith("gameshop/")) throw new Error("Execution target branch must start with gameshop/.");
 
   const existing = getExecution(id);
   const startIndex = existing?.completedOperations ?? 0;
@@ -21,39 +24,28 @@ export async function executeGitHubPlan(request: ExecuteGitHubRequest) {
   if (startIndex > operations.length) throw new Error("Stored execution state does not match the supplied operation list.");
 
   const now = new Date().toISOString();
-  saveExecution(existing ?? {
-    executionId: id,
-    planDigest: manifest.planDigest,
-    projectId,
-    mode: dryRun ? "dry-run" : "execute",
-    status: "planned",
-    createdAt: now,
-    updatedAt: now,
-    completedOperations: 0,
-    totalOperations: operations.length,
-    operationResults: [],
-  });
-  updateExecution(id, { status: "running", totalOperations: operations.length });
-
+  saveExecution(existing ?? { executionId:id, planDigest:manifest.planDigest, projectId, mode:dryRun?"dry-run":"execute", status:"planned", createdAt:now, updatedAt:now, completedOperations:0, totalOperations:operations.length, operationResults:[] });
+  updateExecution(id, { status:"running", totalOperations:operations.length });
   const results = [...(existing?.operationResults ?? [])];
+
   try {
     for (let index = startIndex; index < operations.length; index++) {
       const operation = operations[index];
       let current: Awaited<ReturnType<typeof githubReadProjectFile>> | null = null;
-      try { current = await githubReadProjectFile({ projectId, path: operation.path, ref: manifest.target?.branch }); } catch { current = null; }
+      try { current = await githubReadProjectFile({ projectId, path: operation.path, ref: branch }); } catch { current = null; }
       if (dryRun) {
         results.push({ index, path: operation.path, action: current ? "update" : "create", currentSha: current?.sha ?? null, status: "planned" });
       } else {
         if (!prepareRequest.allowWrites) throw new Error("Execution requires explicit write approval.");
-        const result = await githubUpsertProjectFile({ projectId, path: operation.path, content: operation.content, message: operation.message, branch: manifest.target?.branch, sha: operation.sha ?? (typeof current?.sha === "string" ? current.sha : undefined) });
+        const result = await githubUpsertProjectFile({ projectId, path: operation.path, content: operation.content, message: operation.message, branch: branch!, sha: operation.sha ?? (typeof current?.sha === "string" ? current.sha : undefined) });
         results.push({ index, ...result, action: current ? "update" : "create", status: "completed" });
       }
-      updateExecution(id, { completedOperations: index + 1, operationResults: results });
+      updateExecution(id, { completedOperations:index+1, operationResults:results });
     }
-    const final = updateExecution(id, { status: "completed", operationResults: results });
-    return { executionId: id, planDigest: manifest.planDigest, mode: dryRun ? "dry-run" : "execute", status: "completed", resumedFromOperation: startIndex, projectId, operations: results, execution: final, manifest };
+    const final = updateExecution(id, { status:"completed", operationResults:results });
+    return { executionId:id, planDigest:manifest.planDigest, mode:dryRun?"dry-run":"execute", status:"completed", resumedFromOperation:startIndex, projectId, operations:results, execution:final, manifest };
   } catch (error) {
-    updateExecution(id, { status: "failed", lastError: error instanceof Error ? error.message : "Execution failed.", operationResults: results });
+    updateExecution(id, { status:"failed", lastError:error instanceof Error?error.message:"Execution failed.", operationResults:results });
     throw error;
   }
 }

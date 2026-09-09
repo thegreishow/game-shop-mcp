@@ -11,11 +11,7 @@ function payloadFrom(text: string) {
 }
 
 async function rpc(body: unknown, session?: string) {
-  const headers: Record<string, string> = {
-    authorization: "Bearer smoke-token",
-    accept: "application/json, text/event-stream",
-    "content-type": "application/json",
-  };
+  const headers: Record<string, string> = { authorization: "Bearer smoke-token", accept: "application/json, text/event-stream", "content-type": "application/json" };
   if (session) headers["mcp-session-id"] = session;
   const response = await POST(new Request("http://localhost/mcp", { method: "POST", headers, body: JSON.stringify(body) }));
   return { response, body: payloadFrom(await response.text()) };
@@ -29,30 +25,40 @@ async function main() {
 
   process.env.GAME_SHOP_MCP_TOKEN = "smoke-token";
   delete process.env.GAME_SHOP_ALLOW_PAID_GENERATION;
+  delete process.env.GAME_SHOP_ALLOW_GITHUB_WRITES;
 
   const initialized = await rpc({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "game-shop-smoke", version: "1.0.0" } } });
   assert.equal(initialized.response.status, 200);
   assert.ok(initialized.body?.result, "initialize must return an MCP result");
   const session = initialized.response.headers.get("mcp-session-id") ?? undefined;
-
   const initializedNotification = await rpc({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }, session);
-  assert.ok([200, 202, 204].includes(initializedNotification.response.status), "initialized notification should be accepted");
+  assert.ok([200, 202, 204].includes(initializedNotification.response.status));
 
   const listed = await rpc({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }, session);
   const tools = listed.body?.result?.tools ?? [];
   const names = new Set(tools.map((tool: { name: string }) => tool.name));
-  for (const required of ["gameshop_spend_policy", "gameshop_plan_build", "gameshop_project_context", "gameshop_github_read_file", "gameshop_github_upsert_file"]) {
-    assert.ok(names.has(required), `missing MCP tool: ${required}`);
-  }
+  for (const required of [
+    "gameshop_spend_policy", "gameshop_plan_build", "gameshop_list_projects", "gameshop_project_context",
+    "gameshop_inspect_project", "gameshop_plan_project", "gameshop_create_project_branch", "gameshop_github_read_file",
+    "gameshop_github_upsert_file", "gameshop_verify_project_branch", "gameshop_create_project_pr",
+  ]) assert.ok(names.has(required), `missing MCP tool: ${required}`);
 
-  const spend = await rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
-  assert.equal(spend.body?.result?.structuredContent?.allowPaidGeneration, false, "paid generation must be off by default");
+  const projects = await rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
+  const projectList = projects.body?.result?.structuredContent ?? [];
+  const serialized = JSON.stringify(projectList);
+  for (const id of ["dubai-legends", "dreamweaver-oracle", "rodeo"]) assert.match(serialized, new RegExp(id));
 
-  const blocked = await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
-  assert.equal(blocked.body?.result?.isError, true, "paid generation tool must be blocked without opt-in");
+  const projectPlan = await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "gameshop_plan_project", arguments: { projectId: "dubai-legends", goal: "Improve player motion and stability" } } }, session);
+  assert.equal(projectPlan.body?.result?.isError, undefined, "project planning should be read-only and available without GitHub credentials");
+  assert.match(JSON.stringify(projectPlan.body?.result?.structuredContent), /arcade\/games\/dubai-legends/);
+
+  const spend = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
+  assert.equal(spend.body?.result?.structuredContent?.allowPaidGeneration, false);
+  const blocked = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
+  assert.equal(blocked.body?.result?.isError, true);
   assert.match(blocked.body?.result?.content?.[0]?.text ?? "", /Paid generation is disabled/);
 
-  console.log(`MCP smoke OK: ${tools.length} tools; auth fail-closed and spend lock verified.`);
+  console.log(`MCP smoke OK: ${tools.length} tools; core projects, project planning, auth and spend lock verified.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
