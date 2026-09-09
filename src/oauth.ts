@@ -1,0 +1,22 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+
+export const OAUTH_SCOPES=["gameshop.read","gameshop.plan","gameshop.execute","gameshop.qa","gameshop.write","gameshop.deploy"] as const;
+export type GameShopScope=typeof OAUTH_SCOPES[number];
+
+type SignedPayload={typ:"code"|"access";iss:string;aud:string;sub:string;client_id:string;scope:string;iat:number;exp:number;redirect_uri?:string;code_challenge?:string;jti:string};
+const b64=(value:string|Buffer)=>Buffer.from(value).toString("base64url");
+const unb64=(value:string)=>Buffer.from(value,"base64url").toString("utf8");
+function signingSecret(){const value=process.env.GAME_SHOP_OAUTH_SIGNING_SECRET?.trim();if(!value)throw new Error("OAuth signing secret is not configured.");return value;}
+function signature(input:string){return createHmac("sha256",signingSecret()).update(input).digest("base64url");}
+function sign(payload:SignedPayload){const body=b64(JSON.stringify(payload));return `${body}.${signature(body)}`;}
+function verify(token:string,expected:"code"|"access"){const [body,sig]=token.split(".");if(!body||!sig)throw new Error("Invalid OAuth token.");const expectedSig=signature(body);const a=Buffer.from(sig),b=Buffer.from(expectedSig);if(a.length!==b.length||!timingSafeEqual(a,b))throw new Error("Invalid OAuth token signature.");const payload=JSON.parse(unb64(body)) as SignedPayload;if(payload.typ!==expected||payload.exp<=Math.floor(Date.now()/1000))throw new Error("OAuth token expired or invalid.");return payload;}
+export function oauthBase(request?:Request){return process.env.GAME_SHOP_PUBLIC_URL?.replace(/\/$/,"")||(request?new URL(request.url).origin:"https://game-shop-mcp.vercel.app");}
+export function oauthClientId(){return process.env.GAME_SHOP_OAUTH_CLIENT_ID?.trim()||"game-shop-grok-web";}
+export function ownerSecret(){return process.env.GAME_SHOP_OAUTH_OWNER_SECRET?.trim()||"";}
+export function normalizeScope(raw:string|undefined){const requested=(raw||"gameshop.read").split(/\s+/).filter(Boolean);const allowed=requested.filter((scope):scope is GameShopScope=>(OAUTH_SCOPES as readonly string[]).includes(scope));return allowed.length?allowed.join(" "):"gameshop.read";}
+export function redirectAllowed(raw:string){try{const url=new URL(raw);if(url.protocol!=="https:")return false;const extra=(process.env.GAME_SHOP_OAUTH_REDIRECT_HOSTS||"").split(",").map(v=>v.trim()).filter(Boolean);const allowed=["grok.com","x.ai",...extra];return allowed.some(host=>url.hostname===host||url.hostname.endsWith(`.${host}`));}catch{return false;}}
+export function createAuthorizationCode(input:{issuer:string;clientId:string;redirectUri:string;scope:string;codeChallenge:string}){const now=Math.floor(Date.now()/1000);return sign({typ:"code",iss:input.issuer,aud:`${input.issuer}/oauth/token`,sub:"game-shop-owner",client_id:input.clientId,scope:input.scope,iat:now,exp:now+180,redirect_uri:input.redirectUri,code_challenge:input.codeChallenge,jti:crypto.randomUUID()});}
+export function exchangeAuthorizationCode(input:{code:string;clientId:string;redirectUri:string;codeVerifier:string;issuer:string}){const payload=verify(input.code,"code");if(payload.client_id!==input.clientId||payload.redirect_uri!==input.redirectUri||payload.iss!==input.issuer)throw new Error("Authorization code binding mismatch.");const challenge=createHash("sha256").update(input.codeVerifier).digest("base64url");if(challenge!==payload.code_challenge)throw new Error("PKCE verification failed.");const now=Math.floor(Date.now()/1000);const token=sign({typ:"access",iss:input.issuer,aud:`${input.issuer}/mcp`,sub:payload.sub,client_id:payload.client_id,scope:payload.scope,iat:now,exp:now+3600,jti:crypto.randomUUID()});return{access_token:token,token_type:"Bearer",expires_in:3600,scope:payload.scope};}
+export function verifyAccessToken(token:string,issuer?:string){const payload=verify(token,"access");if(issuer&&payload.iss!==issuer)throw new Error("OAuth issuer mismatch.");return payload;}
+export function oauthMetadata(base:string){return{issuer:base,authorization_endpoint:`${base}/oauth/authorize`,token_endpoint:`${base}/oauth/token`,response_types_supported:["code"],grant_types_supported:["authorization_code"],code_challenge_methods_supported:["S256"],token_endpoint_auth_methods_supported:["none"],scopes_supported:OAUTH_SCOPES,client_id_metadata_document_supported:false};}
+export function protectedResourceMetadata(base:string){return{resource:`${base}/mcp`,authorization_servers:[base],scopes_supported:OAUTH_SCOPES,bearer_methods_supported:["header"]};}
