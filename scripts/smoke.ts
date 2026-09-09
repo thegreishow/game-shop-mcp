@@ -55,9 +55,10 @@ async function main() {
 
   const integrations = await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "gameshop_integrations", arguments: {} } }, session);
   const integrationText = JSON.stringify(integrations.body?.result?.structuredContent ?? {});
-  for (const id of ["originkit-mcp", "shaders-mcp", "shadcn-mcp", "daisyui-mcp", "logoai-api", "webgpu", "headless-ui"]) {
-    assert.match(integrationText, new RegExp(id), `missing integration contract: ${id}`);
-  }
+  for (const id of [
+    "originkit-mcp", "shaders-mcp", "shadcn-mcp", "daisyui-mcp", "logoai-api", "webgpu", "headless-ui",
+    "motion-so", "contextcore", "bklit-ui",
+  ]) assert.match(integrationText, new RegExp(id), `missing integration contract: ${id}`);
 
   const projects = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
   const projectList = projects.body?.result?.structuredContent ?? [];
@@ -74,7 +75,7 @@ async function main() {
   assert.equal(blocked.body?.result?.isError, true);
   assert.match(blocked.body?.result?.content?.[0]?.text ?? "", /Paid generation is disabled/);
 
-  console.log(`MCP smoke OK: ${tools.length} tools; Anime.js, expanded integration registry, ecosystem catalog, project planning, auth and spend lock verified.`);
+  console.log(`MCP smoke OK: ${tools.length} tools; Anime.js, expanded MCP/API registry, ecosystem catalog, project planning, auth and spend lock verified.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
