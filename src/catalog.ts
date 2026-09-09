@@ -1,4 +1,7 @@
+import { spendPolicy } from "./spend.js";
+
 export const buildCapabilities = {
+  spend: spendPolicy(),
   ui: {
     reactBits: {
       name: "React Bits",
@@ -30,5 +33,8 @@ export const buildCapabilities = {
 } as const;
 
 export function capabilityCatalog() {
-  return buildCapabilities;
+  return {
+    ...buildCapabilities,
+    spend: spendPolicy(),
+  };
 }

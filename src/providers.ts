@@ -1,3 +1,5 @@
+import { assertPaidGenerationAllowed } from "./spend.js";
+
 export type ProviderName =
   | "spriteship"
   | "autosprite"
@@ -12,6 +14,7 @@ export type ProviderInfo = {
   purpose: string;
   configured: boolean;
   integration: "rest" | "mcp" | "rest+mcp" | "planned";
+  paidCalls: "blocked-by-default" | "planned";
 };
 
 export function providerStatus(): ProviderInfo[] {
@@ -21,42 +24,49 @@ export function providerStatus(): ProviderInfo[] {
       purpose: "Primary game-art and animation pipeline",
       configured: Boolean(process.env.SPRITESHIP_API_KEY),
       integration: "rest+mcp",
+      paidCalls: "blocked-by-default",
     },
     {
       name: "autosprite",
       purpose: "Character generation and Phaser-ready sprite sheets",
       configured: Boolean(process.env.AUTOSPRITE_API_KEY),
       integration: "rest+mcp",
+      paidCalls: "blocked-by-default",
     },
     {
       name: "sprite-ai",
       purpose: "2D and pixel-art sprite generation, animation, restyling and maps",
       configured: Boolean(process.env.SPRITE_AI_API_KEY),
       integration: "rest+mcp",
+      paidCalls: "blocked-by-default",
     },
     {
       name: "spritesheet-ai",
       purpose: "Aligned multi-animation spritesheets and engine-ready exports",
       configured: Boolean(process.env.SPRITESHEET_AI_API_KEY),
       integration: "planned",
+      paidCalls: "planned",
     },
     {
       name: "spritecook",
       purpose: "Game art, characters, animation, tilesets, UI, textures and background removal",
       configured: Boolean(process.env.SPRITECOOK_API_KEY),
       integration: "rest+mcp",
+      paidCalls: "blocked-by-default",
     },
     {
       name: "aimlapi",
       purpose: "General AI model gateway for image, video, audio, and text models",
       configured: Boolean(process.env.AIMLAPI_API_KEY),
       integration: "rest",
+      paidCalls: "blocked-by-default",
     },
     {
       name: "deepseek",
       purpose: "Coding and reasoning provider",
       configured: Boolean(process.env.DEEPSEEK_API_KEY),
       integration: "rest",
+      paidCalls: "blocked-by-default",
     },
   ];
 }
@@ -81,6 +91,7 @@ export async function autoSpriteCreateCharacter(input: {
   quality?: "turbo" | "pro";
   isHumanoid?: boolean;
 }) {
+  assertPaidGenerationAllowed("autosprite.createCharacter");
   const key = process.env.AUTOSPRITE_API_KEY;
   if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
 
@@ -109,6 +120,7 @@ export async function autoSpriteGenerateAnimations(input: {
   frameSize?: number;
   removeBg?: "default" | "ultra";
 }) {
+  assertPaidGenerationAllowed("autosprite.generateAnimations");
   const key = process.env.AUTOSPRITE_API_KEY;
   if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
 
@@ -177,6 +189,7 @@ export async function spriteCookGenerate(input: {
   editAssetId?: string;
   projectId?: string;
 }) {
+  assertPaidGenerationAllowed("spritecook.generate");
   const body: Record<string, unknown> = {
     prompt: input.prompt,
     mode: input.mode ?? "assets",

@@ -11,6 +11,7 @@ import {
   spriteCookGetJob,
   spriteCookListModels,
 } from "../src/providers.js";
+import { spendPolicy } from "../src/spend.js";
 
 function asResult(data: unknown) {
   return {
@@ -32,10 +33,22 @@ const handler = createMcpHandler((server) => {
     "gameshop_list_providers",
     {
       title: "List Game Shop Providers",
-      description: "List the AI/game-asset providers configured behind the Game Shop MCP gateway. Never returns API keys.",
+      description: "List the AI/game-asset providers configured behind the Game Shop MCP gateway. Never returns API keys. Includes the current spend lock.",
       inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
     },
-    async () => asResult({ providers: providerStatus() }),
+    async () => asResult({ spend: spendPolicy(), providers: providerStatus() }),
+  );
+
+  server.registerTool(
+    "gameshop_spend_policy",
+    {
+      title: "Game Shop Spend Policy",
+      description: "Show whether paid provider generation is allowed. Default is blocked so this gateway cannot spend money.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    async () => asResult(spendPolicy()),
   );
 
   server.registerTool(
@@ -53,7 +66,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_generate_character",
     {
       title: "Generate Game Character",
-      description: "Create a new game character using AutoSprite. This is a paid generation action and may consume provider credits.",
+      description: "Create a new game character using AutoSprite. Blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true because this consumes provider credits.",
       inputSchema: z.object({
         name: z.string().min(1).max(100),
         prompt: z.string().min(1).max(600),
@@ -80,7 +93,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_generate_animation",
     {
       title: "Generate Character Animation",
-      description: "Generate one or more sprite-sheet animations for an existing AutoSprite character. This may consume provider credits.",
+      description: "Generate sprite-sheet animations for an existing AutoSprite character. Blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true because this consumes provider credits.",
       inputSchema: z.object({
         characterId: z.string().min(1),
         animations: z.array(z.object({
@@ -113,7 +126,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_generation_status",
     {
       title: "Check Generation Status",
-      description: "Check an AutoSprite generation job without spending additional credits.",
+      description: "Check an AutoSprite generation job without starting a new paid generation.",
       inputSchema: z.object({ jobId: z.string().min(1) }),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
@@ -130,7 +143,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_get_spritesheet",
     {
       title: "Get Sprite Sheet",
-      description: "Return AutoSprite sprite-sheet metadata and temporary download URLs for the PNG atlas/audio when available.",
+      description: "Return AutoSprite sprite-sheet metadata and temporary download URLs for assets that already exist. Does not create a new paid job.",
       inputSchema: z.object({ spritesheetId: z.string().min(1) }),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
@@ -147,7 +160,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_spritecook_models",
     {
       title: "List SpriteCook Models",
-      description: "List the currently available SpriteCook generation models without creating an asset.",
+      description: "List the currently available SpriteCook generation models without creating an asset or spending credits.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
@@ -164,7 +177,7 @@ const handler = createMcpHandler((server) => {
     "gameshop_spritecook_generate",
     {
       title: "Generate Game Art with SpriteCook",
-      description: "Start a SpriteCook game-art generation job. This is a paid generation action and may consume provider credits.",
+      description: "Start a SpriteCook game-art generation job. Blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true because this consumes provider credits.",
       inputSchema: z.object({
         prompt: z.string().min(1).max(2000),
         mode: z.enum(["assets", "texture", "ui"]).optional(),

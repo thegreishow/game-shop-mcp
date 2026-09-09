@@ -2,6 +2,15 @@
 
 Game Shop MCP is a private orchestration layer for building games, websites, apps, interactive experiences and other digital products. Clients such as ChatGPT, Grok, Codex, Cursor and Claude should ask Game Shop for capabilities; Game Shop decides which provider or library should do the work.
 
+## Spend policy
+
+Default operating mode is **free-only**.
+
+- Do not call vendor endpoints that create jobs or consume credits.
+- Paid tools exist so the interface can be designed and tested, but they must refuse unless `GAME_SHOP_ALLOW_PAID_GENERATION=true`.
+- The lock is enforced in `src/spend.ts` and at each paid provider function, not only in tool descriptions.
+- Status, catalog, and model-list tools are allowed because they do not start billed generations.
+
 ## Current foundation
 
 ### Game art and animation
@@ -62,9 +71,12 @@ Do not turn Game Shop into a pile of raw vendor endpoints. Expose capability-ori
 
 Provider-specific tools are useful while integrations mature, but the long-term interface should route by capability, budget, style consistency, speed and target engine.
 
+Paid capability tools must keep the same spend lock. A capability name is not permission to bill.
+
 ## Security
 
 - Never commit provider API keys or license keys.
 - Public Game Shop MCP deployments should require `GAME_SHOP_MCP_TOKEN`.
 - Keep paid-generation tools clearly annotated as non-idempotent and credit-consuming.
-- Prefer read-only discovery and cost estimation before generation where providers support it.
+- Prefer read-only discovery before generation.
+- Do not enable `GAME_SHOP_ALLOW_PAID_GENERATION` on public or shared deployments.
