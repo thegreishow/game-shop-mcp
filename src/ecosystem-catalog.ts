@@ -45,11 +45,12 @@ const entries:EcosystemEntry[] = [
 {name:"Motion Primitives",status:"installable",surfaces:["library","reference"],capabilities:["motion-components","react-ui","templates","sections"],notes:"Core components are usable; Pro source is licensed and must not be mirrored."},
 {name:"Shaders.com",status:"verified",surfaces:["mcp","api","library","registry"],endpoint:"https://shaders.com/mcp",install:"npm install shaders",capabilities:["shader-install","shader-edit","webgpu-effects","javascript-api","shadcn-registry"],notes:"Official MCP with OAuth/API-key auth plus JavaScript API and shadcn registry."},
 {name:"LogoAI",status:"verified",surfaces:["api","reference"],endpoint:"https://legacy.logoai.com/logo-api",capabilities:["logo-generation","logo-customization","brand-assets","iframe-integration"],notes:"Official commercial Logo API exists but requires partner approval; not self-serve."},
+{name:"Mosaic Motion / Motion.so",status:"verified",surfaces:["mcp","api"],endpoint:"https://mcp.motion.so/mcp",capabilities:["prompt-to-video","session-create","session-poll","followup","design-systems","style-references","attachments","source-audit"],notes:"Official OAuth 2.1 MCP plus REST API at api.motion.so/api/motion. Paid generation credits apply."},
+{name:"Bklit UI",status:"installable",surfaces:["registry","cli"],install:"npx skills add bklit/bklit-ui",capabilities:["charts","data-visualization","shadcn-registry","animated-charts"],notes:"MIT @bklit shadcn registry at ui.bklit.com/r/{name}.json; can be browsed through shadcn MCP after registry configuration."},
+{name:"ContextCore",status:"verified",surfaces:["mcp","cli"],install:"python -m pip install contextcore",capabilities:["local-file-index","hybrid-search","code-context","image-search","audio-search","video-search"],notes:"Local-first AGPL MCP with local backend, normally 127.0.0.1:8000. Suitable for desktop/local agents rather than Vercel-hosted execution."},
 {name:"Godly",status:"reference",surfaces:["reference"],capabilities:["web-design-inspiration"]},
-{name:"bklit",status:"research",surfaces:["reference"],capabilities:["unknown"],notes:"Programmable surface not yet verified."},
 {name:"Animos",status:"research",surfaces:["reference"],capabilities:["animation-tooling"],notes:"Programmable surface not yet verified."},
-{name:"AutoAE",status:"research",surfaces:["reference"],capabilities:["motion-video"],notes:"Programmable surface not yet verified."},
-{name:"Motion.so",status:"research",surfaces:["reference"],capabilities:["motion-design"],notes:"Programmable surface not yet verified."},
+{name:"AutoAE",status:"research",surfaces:["reference"],capabilities:["motion-video"],notes:"No public developer API/MCP contract verified."},
 {name:"Animaster LIB",status:"research",surfaces:["reference"],capabilities:["animation-library"],notes:"Exact project/source needs verification."},
 {name:"Vibify",status:"research",surfaces:["reference"],capabilities:["ui-motion"],notes:"Programmable surface not yet verified."},
 {name:"Liquid Logo",status:"research",surfaces:["reference"],capabilities:["logo-motion"],notes:"Exact project/source needs verification."},
@@ -58,7 +59,6 @@ const entries:EcosystemEntry[] = [
 {name:"The Odin Project",status:"reference",surfaces:["reference"],capabilities:["learning-reference"]},
 {name:"Compoentry",status:"research",surfaces:["reference"],capabilities:["component-reference"],notes:"Programmable surface not yet verified."},
 {name:"is.graphics",status:"research",surfaces:["reference"],capabilities:["graphics-reference"],notes:"Programmable surface not yet verified."},
-{name:"ContextCore",status:"research",surfaces:["reference"],capabilities:["context-tooling"],notes:"Programmable surface not yet verified."},
 {name:"SkeuDesign",status:"reference",surfaces:["reference"],capabilities:["skeuomorphic-design-reference"]},
 ];
 
