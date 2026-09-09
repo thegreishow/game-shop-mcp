@@ -5,7 +5,8 @@ export type VerificationCheck = { path:string; required?:boolean; contains?:stri
 
 export async function verifyProject(input:{projectId:string; ref?:string; checks?:VerificationCheck[]}){
   const project=getProject(input.projectId);
-  const checks=input.checks?.length?input.checks:(project.verifyPaths??[]).map(path=>({path,required:true}));
+  const defaultPath=project.gamePath?`${project.gamePath.replace(/\/$/,"")}/index.html`:"package.json";
+  const checks=input.checks?.length?input.checks:[{path:defaultPath,required:true}];
   const results=[] as Array<Record<string,unknown>>;
   for(const check of checks){
     try{
@@ -13,7 +14,7 @@ export async function verifyProject(input:{projectId:string; ref?:string; checks
       const containsOk=!check.contains||file.content.includes(check.contains);
       results.push({path:check.path,ok:containsOk,sha:file.sha,reason:containsOk?null:"expected-content-missing"});
     }catch{
-      results.push({path:check.path,ok:check.required===false,reason:"not-readable-as-file"});
+      results.push({path:check.path,ok:check.required===false,reason:"missing-or-unreadable-file"});
     }
   }
   const failed=results.filter(result=>result.ok!==true);
