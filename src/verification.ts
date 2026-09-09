@@ -1,27 +1,5 @@
 import { githubReadProjectFile } from "./github-execution.js";
 import { getProject } from "./projects.js";
-
-export type VerificationCheck = { path:string; required?:boolean; contains?:string };
-
-export async function verifyProject(input:{projectId:string; ref?:string; checks?:VerificationCheck[]}){
-  const project=getProject(input.projectId);
-  const defaultPath=project.gamePath?`${project.gamePath.replace(/\/$/,"")}/index.html`:"package.json";
-  const checks=input.checks?.length?input.checks:[{path:defaultPath,required:true}];
-  const results=[] as Array<Record<string,unknown>>;
-  for(const check of checks){
-    try{
-      const file=await githubReadProjectFile({projectId:input.projectId,path:check.path,ref:input.ref});
-      const containsOk=!check.contains||file.content.includes(check.contains);
-      results.push({path:check.path,ok:containsOk,sha:file.sha,reason:containsOk?null:"expected-content-missing"});
-    }catch{
-      results.push({path:check.path,ok:check.required===false,reason:"missing-or-unreadable-file"});
-    }
-  }
-  const failed=results.filter(result=>result.ok!==true);
-  return {projectId:input.projectId,ref:input.ref??project.defaultBranch,status:failed.length?"failed":"passed",checks:results,failedCount:failed.length};
-}
-
-export function createRepairPlan(input:{projectId:string; verification:{status:string;checks:Array<Record<string,unknown>>}}){
-  const failed=input.verification.checks.filter(check=>check.ok!==true);
-  return {projectId:input.projectId,status:failed.length?"repair_required":"clean",repairs:failed.map((check,index)=>({id:`repair-${index+1}`,path:check.path,reason:check.reason??"verification-failed",action:"inspect the target, make the smallest safe correction, then rerun verification"})),policy:"Repair planning is read-only. Repository mutation still requires the Game Shop execution/write gates."};
-}
+export type VerificationCheck={path:string;required?:boolean;contains?:string};
+export async function verifyProject(input:{projectId:string;ref?:string;checks?:VerificationCheck[]}){const project=getProject(input.projectId);const checks=input.checks?.length?input.checks:[{path:"index.html",required:true}];const results=[] as Array<Record<string,unknown>>;for(const check of checks){try{const file=await githubReadProjectFile({projectId:input.projectId,path:check.path,ref:input.ref});const containsOk=!check.contains||file.content.includes(check.contains);results.push({path:check.path,ok:containsOk,sha:file.sha,reason:containsOk?null:"expected-content-missing"});}catch{results.push({path:check.path,ok:check.required===false,reason:"missing-or-unreadable-file"});}}const failed=results.filter(result=>result.ok!==true);return{projectId:input.projectId,ref:input.ref??project.defaultBranch,status:failed.length?"failed":"passed",checks:results,failedCount:failed.length};}
+export function createRepairPlan(input:{projectId:string;verification:{status:string;checks:Array<Record<string,unknown>>}}){const failed=input.verification.checks.filter(check=>check.ok!==true);return{projectId:input.projectId,status:failed.length?"repair_required":"clean",repairs:failed.map((check,index)=>({id:`repair-${index+1}`,path:check.path,reason:check.reason??"verification-failed",action:"inspect the target, make the smallest safe correction, then rerun verification"})),policy:"Repair planning is read-only. Repository mutation still requires the Game Shop execution/write gates."};}
