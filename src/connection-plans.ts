@@ -1,4 +1,4 @@
-import { integrationStatus } from './integrations.js';
+import { integrationRegistry, integrationStatus } from './integrations.js';
 
 export type ConnectionMode = 'remote-mcp' | 'stdio-mcp' | 'rest-api' | 'library' | 'platform-api' | 'reference';
 
@@ -31,12 +31,5 @@ export function connectionPlan(id:string){
 }
 
 export function allConnectionPlans(){
-  // Enumerate through the public registry so this stays in sync with integrations.ts.
-  const { integrationRegistry } = requireIntegrationRegistry();
-  return integrationRegistry().map((item:{id:string})=>connectionPlan(item.id));
-}
-
-function requireIntegrationRegistry(){
-  // ESM-safe indirection without creating a circular eager import path in callers.
-  return { integrationRegistry: () => (globalThis as any).__gameshopIntegrationRegistry?.() ?? [] };
+  return integrationRegistry().map(item=>connectionPlan(item.id));
 }
