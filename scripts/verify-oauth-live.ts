@@ -1,3 +1,5 @@
+export {};
+
 const base=(process.env.GAME_SHOP_PUBLIC_URL||process.argv[2]||"https://game-shop-mcp.vercel.app").replace(/\/$/,"");
 
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message);}
