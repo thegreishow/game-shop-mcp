@@ -30,7 +30,21 @@ export async function falJob(input:{jobId:string;statusUrl:string;responseUrl?:s
 export async function replicatePredict(input:{version:string;input:Record<string,unknown>;artifact?:ArtifactContext}){assertPaidGenerationAllowed("Replicate prediction");const token=secret("REPLICATE_API_TOKEN");const data=await jsonRequest("https://api.replicate.com/v1/predictions",{method:"POST",headers:{Authorization:`Token ${token}`,"content-type":"application/json","Prefer":"respond-async"},body:JSON.stringify({version:input.version,input:input.input})});return attach("replicate",data,{name:"Replicate prediction output",...input.artifact});}
 export async function replicatePrediction(id:string){const token=secret("REPLICATE_API_TOKEN");const data=await jsonRequest(`https://api.replicate.com/v1/predictions/${encodeURIComponent(id)}`,{headers:{Authorization:`Token ${token}`}});return finalize("replicate",id,data,String(record(data).status??"unknown"));}
 
-async function ludoMcp(tool:string,args:Record<string,unknown>){const key=secret("LUDO_API_KEY");const endpoint="https://mcp.ludo.ai/mcp";const headers={Authorization:`ApiKey ${key}`,Authentication:`ApiKey ${key}`,"content-type":"application/json",Accept:"application/json, text/event-stream"};const init=await rawRequest(endpoint,{method:"POST",headers,body:JSON.stringify({jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"game-shop-mcp",version:"0.2.0"}})});const session=init.headers.get("mcp-session-id");await init.text();const callHeaders=session?{...headers,"mcp-session-id":session}:headers;const response=await rawRequest(endpoint,{method:"POST",headers:callHeaders,body:JSON.stringify({jsonrpc:"2.0",id:2,method:"tools/call",params:{name:tool,arguments:args}})});const text=await response.text();if(text.startsWith("event:")){const dataLine=text.split("\n").find(line=>line.startsWith("data:"));return dataLine?JSON.parse(dataLine.slice(5).trim()):{raw:text};}return JSON.parse(text);}
+async function ludoMcp(tool:string,args:Record<string,unknown>){
+ const key=secret("LUDO_API_KEY");
+ const endpoint="https://mcp.ludo.ai/mcp";
+ const headers:Record<string,string>={Authorization:`ApiKey ${key}`,Authentication:`ApiKey ${key}`,"content-type":"application/json",Accept:"application/json, text/event-stream"};
+ const initialize={jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"game-shop-mcp",version:"0.2.0"}}};
+ const init=await rawRequest(endpoint,{method:"POST",headers,body:JSON.stringify(initialize)});
+ const session=init.headers.get("mcp-session-id");
+ await init.text();
+ const callHeaders:Record<string,string>=session?{...headers,"mcp-session-id":session}:headers;
+ const call={jsonrpc:"2.0",id:2,method:"tools/call",params:{name:tool,arguments:args}};
+ const response=await rawRequest(endpoint,{method:"POST",headers:callHeaders,body:JSON.stringify(call)});
+ const text=await response.text();
+ if(text.startsWith("event:")){const dataLine=text.split("\n").find(line=>line.startsWith("data:"));return dataLine?JSON.parse(dataLine.slice(5).trim()):{raw:text};}
+ return JSON.parse(text);
+}
 const LUDO_GENERATORS=new Set(["createImage","editImage","generateWithStyle","generatePose","removeBackground","create3DModel","animateSprite","animateSpriteKeyframes","editSpritesheet","createVideo","createVideoFromReferences","editVideo","upscaleVideo","createSoundEffect","createMusic","createVoice","createSpeech","createSpeechPreset"]);
 export async function ludoGenerate(input:{tool:string;input:Record<string,unknown>;artifact?:ArtifactContext}){assertPaidGenerationAllowed("Ludo generation");if(!LUDO_GENERATORS.has(input.tool))throw new Error("Unsupported Ludo generation tool.");const data=await ludoMcp(input.tool,input.input);return attach("ludo",data,{name:`Ludo ${input.tool} output`,...input.artifact});}
 export async function ludoJob(input:{id:string;wait?:number}){const data=await ludoMcp("getApiJob",{id:input.id,wait:Math.max(0,Math.min(60,input.wait??0))});const root=record(data);const result=record(root.result);const structured=record(result.structuredContent);const payload=Object.keys(structured).length?structured:data;const status=String(record(payload).status??root.status??"unknown");return finalize("ludo",input.id,payload,status);}
