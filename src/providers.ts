@@ -1,9 +1,17 @@
-export type ProviderName = "spriteship" | "autosprite" | "sprite-ai" | "aimlapi" | "deepseek";
+export type ProviderName =
+  | "spriteship"
+  | "autosprite"
+  | "sprite-ai"
+  | "spritesheet-ai"
+  | "spritecook"
+  | "aimlapi"
+  | "deepseek";
 
 export type ProviderInfo = {
   name: ProviderName;
   purpose: string;
   configured: boolean;
+  integration: "rest" | "mcp" | "rest+mcp" | "planned";
 };
 
 export function providerStatus(): ProviderInfo[] {
@@ -12,26 +20,43 @@ export function providerStatus(): ProviderInfo[] {
       name: "spriteship",
       purpose: "Primary game-art and animation pipeline",
       configured: Boolean(process.env.SPRITESHIP_API_KEY),
+      integration: "rest+mcp",
     },
     {
       name: "autosprite",
       purpose: "Character generation and Phaser-ready sprite sheets",
       configured: Boolean(process.env.AUTOSPRITE_API_KEY),
+      integration: "rest+mcp",
     },
     {
       name: "sprite-ai",
-      purpose: "2D and pixel-art sprite specialist",
+      purpose: "2D and pixel-art sprite generation, animation, restyling and maps",
       configured: Boolean(process.env.SPRITE_AI_API_KEY),
+      integration: "rest+mcp",
+    },
+    {
+      name: "spritesheet-ai",
+      purpose: "Aligned multi-animation spritesheets and engine-ready exports",
+      configured: Boolean(process.env.SPRITESHEET_AI_API_KEY),
+      integration: "planned",
+    },
+    {
+      name: "spritecook",
+      purpose: "Game art, characters, animation, tilesets, UI, textures and background removal",
+      configured: Boolean(process.env.SPRITECOOK_API_KEY),
+      integration: "rest+mcp",
     },
     {
       name: "aimlapi",
       purpose: "General AI model gateway for image, video, audio, and text models",
       configured: Boolean(process.env.AIMLAPI_API_KEY),
+      integration: "rest",
     },
     {
       name: "deepseek",
       purpose: "Coding and reasoning provider",
       configured: Boolean(process.env.DEEPSEEK_API_KEY),
+      integration: "rest",
     },
   ];
 }
@@ -121,6 +146,60 @@ export async function autoSpriteGetSpritesheet(spritesheetId: string) {
   if (!key) throw new Error("AUTOSPRITE_API_KEY is not configured");
   const response = await fetch(`https://www.autosprite.io/api/v1/spritesheets/${encodeURIComponent(spritesheetId)}`, {
     headers: { "x-api-key": key },
+  });
+  return readJson(response);
+}
+
+function spriteCookHeaders() {
+  const key = process.env.SPRITECOOK_API_KEY;
+  if (!key) throw new Error("SPRITECOOK_API_KEY is not configured");
+  return {
+    Authorization: `Bearer ${key}`,
+    "content-type": "application/json",
+  };
+}
+
+export async function spriteCookListModels() {
+  const response = await fetch("https://api.spritecook.ai/v1/api/models", {
+    headers: spriteCookHeaders(),
+  });
+  return readJson(response);
+}
+
+export async function spriteCookGenerate(input: {
+  prompt: string;
+  mode?: "assets" | "texture" | "ui";
+  model?: string;
+  resolution?: "1K" | "2K" | "4K";
+  quality?: "low" | "medium" | "high";
+  colors?: string[];
+  referenceAssetId?: string;
+  editAssetId?: string;
+  projectId?: string;
+}) {
+  const body: Record<string, unknown> = {
+    prompt: input.prompt,
+    mode: input.mode ?? "assets",
+    resolution: input.resolution ?? "1K",
+  };
+  if (input.model) body.model = input.model;
+  if (input.quality) body.quality = input.quality;
+  if (input.colors) body.colors = input.colors;
+  if (input.referenceAssetId) body.reference_asset_id = input.referenceAssetId;
+  if (input.editAssetId) body.edit_asset_id = input.editAssetId;
+  if (input.projectId) body.project_id = input.projectId;
+
+  const response = await fetch("https://api.spritecook.ai/v1/api/generate", {
+    method: "POST",
+    headers: spriteCookHeaders(),
+    body: JSON.stringify(body),
+  });
+  return readJson(response);
+}
+
+export async function spriteCookGetJob(jobId: string) {
+  const response = await fetch(`https://api.spritecook.ai/v1/api/jobs/${encodeURIComponent(jobId)}`, {
+    headers: spriteCookHeaders(),
   });
   return readJson(response);
 }
