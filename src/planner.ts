@@ -1,94 +1,10 @@
-import { routeBuild, type BuildDomain, type BuildPreference } from "./multi-router.js";
+import { routeMultiDomain, type Domain, type Preference } from "./multidomain-router.js";
 
 export type ProductKind = "website" | "web-app" | "browser-game" | "mobile-app" | "interactive-experience" | "digital-product";
 export type BuildGoal = "premium" | "cinematic" | "playful" | "minimal" | "immersive" | "conversion" | "performance";
-export type BuildPlanRequest = {
-  brief: string;
-  product: ProductKind;
-  goals?: BuildGoal[];
-  framework?: "react" | "next" | "vanilla" | "vue" | "phaser" | "three" | "any";
-  preference?: BuildPreference;
-  includeDomains?: BuildDomain[];
-};
-
-type PlanStep = {
-  id: string;
-  phase: "foundation" | "visual-system" | "interaction" | "scene" | "media" | "polish" | "qa";
-  domain: BuildDomain;
-  capability: string;
-  engine: string | null;
-  install?: string;
-  action: string;
-  dependsOn: string[];
-};
-
-const domainCapabilities: Record<BuildDomain, string[]> = {
-  ui: ["component", "design-system"],
-  motion: ["micro-interaction", "timeline", "smooth-scroll"],
-  "3d": ["web-3d", "interactive-3d"],
-  shader: ["webgl-shader", "webgpu"],
-  video: ["motion-design", "web-animation"],
-  "design-reference": ["award-inspiration", "design-guidance"],
-  "agent-platform": ["agent-builder", "agent-ui-builder"],
-};
-
-function frameworkForRouter(framework: BuildPlanRequest["framework"]) {
-  if (framework === "next") return "react" as const;
-  if (framework === "phaser") return "phaser-overlay" as const;
-  if (framework === "three") return "vanilla" as const;
-  return framework ?? "any";
-}
-
-function defaultDomains(product: ProductKind, goals: BuildGoal[]) : BuildDomain[] {
-  const base: BuildDomain[] = ["ui", "motion", "design-reference"];
-  if (["browser-game", "interactive-experience"].includes(product) || goals.includes("immersive") || goals.includes("cinematic")) base.push("3d", "shader");
-  if (goals.includes("cinematic") || goals.includes("conversion")) base.push("video");
-  return [...new Set(base)];
-}
-
-export function createBuildPlan(request: BuildPlanRequest) {
-  const goals = request.goals?.length ? request.goals : ["premium"];
-  const domains = request.includeDomains?.length ? request.includeDomains : defaultDomains(request.product, goals);
-  const preference = request.preference ?? (goals.includes("performance") ? "performance" : goals.includes("premium") || goals.includes("cinematic") ? "quality" : "balanced");
-  const framework = frameworkForRouter(request.framework);
-  const steps: PlanStep[] = [];
-
-  for (const domain of domains) {
-    const capabilities = domainCapabilities[domain] ?? [];
-    for (const capability of capabilities) {
-      const routed = routeBuild({ domain, capability, preference, framework });
-      const selected = routed.selected;
-      const phase: PlanStep["phase"] = domain === "ui" ? "visual-system" : domain === "motion" ? "interaction" : domain === "3d" || domain === "shader" ? "scene" : domain === "video" ? "media" : "foundation";
-      const id = `${domain}-${capability}`;
-      steps.push({
-        id,
-        phase,
-        domain,
-        capability,
-        engine: selected?.engine ?? null,
-        install: selected?.install,
-        action: selected ? `Use ${selected.engine} for ${capability}. ${selected.notes}` : `No verified engine is currently routed for ${capability}; keep this step manual until an adapter/library is verified.`,
-        dependsOn: phase === "foundation" ? [] : steps.filter((s) => s.phase === "foundation" || s.phase === "visual-system").map((s) => s.id).slice(0, 3),
-      });
-    }
-  }
-
-  const installs = [...new Set(steps.map((s) => s.install).filter((x): x is string => Boolean(x)))];
-  return {
-    version: "1.0",
-    brief: request.brief,
-    product: request.product,
-    goals,
-    framework: request.framework ?? "any",
-    preference,
-    domains,
-    installs,
-    steps,
-    executionPolicy: {
-      paidGeneration: "respect GAME_SHOP_ALLOW_PAID_GENERATION; never infer billing permission from this plan",
-      externalServices: "use only configured/authorized services; request credentials or user approval when required",
-      libraries: "install in the target project, not in the Game Shop gateway unless the gateway itself imports them",
-      registries: "use official registries and preserve license restrictions; never mirror licensed source",
-    },
-  };
-}
+export type BuildPlanRequest = { brief:string; product:ProductKind; goals?:BuildGoal[]; framework?:"react"|"vanilla"|"vue"|"phaser"|"three"|"any"; preference?:Preference; includeDomains?:Domain[] };
+type PlanStep={id:string;phase:"foundation"|"visual-system"|"interaction"|"scene"|"media";domain:Domain;capability:string;engine:string|null;install?:string;connect?:string;action:string;dependsOn:string[]};
+const capabilities:Record<Domain,string[]>={ui:["component","layout"],motion:["timeline","micro-interaction","smooth-scroll"],"3d":["scene","interactive-3d"],shader:["shader","webgl-effect"],video:["motion-design","video"],"design-reference":["visual-reference","design-guidance"],"agent-platform":["build-workflow","agent-ui"]};
+function defaultDomains(product:ProductKind,goals:BuildGoal[]):Domain[]{const d:Domain[]=["ui","motion","design-reference"];if(product==="browser-game"||product==="interactive-experience"||goals.includes("immersive")||goals.includes("cinematic"))d.push("3d","shader");if(goals.includes("cinematic")||goals.includes("conversion"))d.push("video");return [...new Set(d)];}
+function phaseFor(d:Domain):PlanStep["phase"]{if(d==="design-reference"||d==="agent-platform")return"foundation";if(d==="ui")return"visual-system";if(d==="motion")return"interaction";if(d==="3d"||d==="shader")return"scene";return"media";}
+export function createBuildPlan(request:BuildPlanRequest){const goals=request.goals?.length?request.goals:["premium"];const domains=request.includeDomains?.length?request.includeDomains:defaultDomains(request.product,goals);const preference=request.preference??(goals.includes("performance")?"bundle":goals.includes("premium")||goals.includes("cinematic")?"quality":"balanced");const framework=request.framework??"any";const steps:PlanStep[]=[];for(const domain of domains){for(const capability of capabilities[domain]){const routed=routeMultiDomain({domain,capability,preference,framework});const s=routed.selected;const phase=phaseFor(domain);const id=`${domain}-${capability}`;steps.push({id,phase,domain,capability,engine:s?.id??null,install:s?.install,connect:s?.connect,action:s?`Use ${s.id} for ${capability}. ${s.notes}`:`No verified route for ${capability}; keep manual until integration is verified.`,dependsOn:phase==="foundation"?[]:steps.filter(x=>x.phase==="foundation"||x.phase==="visual-system").map(x=>x.id).slice(0,4)});}}const installs=[...new Set(steps.map(s=>s.install).filter((x):x is string=>Boolean(x)))];const connections=[...new Set(steps.map(s=>s.connect).filter((x):x is string=>Boolean(x)))];return{version:"1.0",brief:request.brief,product:request.product,goals,framework,preference,domains,installs,connections,steps,executionPolicy:{paidGeneration:"Respect GAME_SHOP_ALLOW_PAID_GENERATION; a plan never grants billing permission.",externalServices:"Use only authorized services and verified integration contracts.",libraries:"Install libraries in the target project, not the gateway unless the gateway imports them.",registries:"Use official registries and preserve license restrictions."}};}
