@@ -46,18 +46,19 @@ export function gameShopSystemAudit(){
   findings.push(qaMemory.durableAcrossColdStarts
     ? finding("qa-memory","info","qa","pass","Regression memory survives cold starts.","Track recipe drift and retire flaky recipes automatically.")
     : finding("qa-memory","warning","qa","attention","QA recipes are process-memory fallback.","Configure durable Game Shop Supabase storage and apply QA_MEMORY_SQL."));
-  findings.push(oauth.ready
-    ? finding("oauth","info","auth","pass","OAuth PKCE runtime configuration is ready.","Add token revocation/rotation and enforce scopes at every MCP tool boundary.")
-    : finding("oauth","critical","auth","blocked",`OAuth configuration is incomplete: ${oauth.missing.join(", ") || "unknown"}.`,"Configure the missing GAME_SHOP_OAUTH_* values before web-client authorization."));
+  const missingOauth=[oauth.environment.signingSecret,oauth.environment.ownerSecret].filter(value=>value==="missing").length;
+  findings.push(oauth.configured
+    ? finding("oauth","info","auth","pass","OAuth PKCE runtime configuration is ready.","Add token revocation/rotation and keep enforcing scopes at every MCP tool boundary.")
+    : finding("oauth","critical","auth","blocked",`OAuth configuration is incomplete (${missingOauth} required secret${missingOauth===1?"":"s"} missing).`,"Configure GAME_SHOP_OAUTH_SIGNING_SECRET and GAME_SHOP_OAUTH_OWNER_SECRET before web-client authorization."));
 
   const callable=readiness.filter(item=>item.callableNow);
   const remotelyCallable=readiness.filter(item=>item.remotelyCallable);
-  if(!process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS){findings.push(finding("external-lock","warning","integrations","attention","Remote integrations are catalogued but external execution is globally locked.","Enable GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS only when a mission explicitly needs live external calls."));}
-  if(!process.env.GAME_SHOP_ALLOW_PAID_GENERATION){findings.push(finding("spend-lock","info","spend","pass","Potentially billable generation is locked.","Keep locked by default and grant per-mission billing authority rather than permanent global authority."));}
-  if(!process.env.BROWSERBASE_API_KEY){findings.push(finding("browserbase","warning","qa","attention","Hosted exploratory Browserbase QA is not configured.","Set BROWSERBASE_API_KEY in the deployed runtime."));}
-  if(!process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL){findings.push(finding("playwright-mcp","warning","qa","attention","No standalone Playwright MCP URL is configured.","Run the standalone Playwright MCP worker or rely on the deterministic GitHub Actions lane."));}
-  if(!preview.configured){findings.push(finding("preview","warning","deployment","attention","Preview deployment adapter has no runtime mapping/token.","Configure GAME_SHOP_VERCEL_PROJECTS_JSON and VERCEL_TOKEN or a deploy hook for each registered project."));}
-  if(tasks.specification!=="2026-07-28"){findings.push(finding("tasks-spec","warning","protocol","attention",`Task bridge reports ${tasks.specification}.`,"Align Tasks extension behavior with MCP 2026-07-28."));}
+  if(process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS!=="true")findings.push(finding("external-lock","warning","integrations","attention","Remote integrations are catalogued but external execution is globally locked.","Enable GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS only when a mission explicitly needs live external calls."));
+  if(process.env.GAME_SHOP_ALLOW_PAID_GENERATION!=="true")findings.push(finding("spend-lock","info","spend","pass","Potentially billable generation is locked.","Keep locked by default and grant per-mission billing authority rather than permanent global authority."));
+  if(!process.env.BROWSERBASE_API_KEY)findings.push(finding("browserbase","warning","qa","attention","Hosted exploratory Browserbase QA is not configured.","Set BROWSERBASE_API_KEY in the deployed runtime."));
+  if(!process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL)findings.push(finding("playwright-mcp","warning","qa","attention","No standalone Playwright MCP URL is configured.","Run the standalone Playwright MCP worker or rely on the deterministic GitHub Actions lane."));
+  if(!preview.configured)findings.push(finding("preview","warning","deployment","attention","Preview deployment adapter has no runtime mapping/token.","Configure GAME_SHOP_VERCEL_PROJECTS_JSON and VERCEL_TOKEN or a deploy hook for each registered project."));
+  if(tasks.specification!=="2026-07-28")findings.push(finding("tasks-spec","warning","protocol","attention",`Task bridge reports ${tasks.specification}.`,"Align Tasks extension behavior with MCP 2026-07-28."));
 
   const byState=integrations.reduce<Record<string,number>>((acc,item)=>{acc[item.state]=(acc[item.state]??0)+1;return acc;},{});
   const byKind=integrations.reduce<Record<string,number>>((acc,item)=>{for(const kind of item.kinds)acc[kind]=(acc[kind]??0)+1;return acc;},{});
