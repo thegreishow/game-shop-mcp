@@ -5,6 +5,21 @@ const windows = new Map<string, { count: number; resetAt: number }>();
 
 export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[] } | { ok: false; status: number; error: string; requiredScopes?: string[] };
 
+const ROUTE_SCOPE: Array<[RegExp, string]> = [
+  [/\/api\/advanced(?:\/|$)/, "gameshop.execute"],
+  [/\/api\/qa(?:\/|$)/, "gameshop.qa"],
+  [/\/api\/diagnostics(?:\/|$)/, "gameshop.qa"],
+  [/\/api\/learning(?:\/|$)/, "gameshop.qa"],
+  [/\/api\/storage(?:\/|$)/, "gameshop.write"],
+  [/\/api\/tasks(?:\/|$)/, "gameshop.execute"],
+  [/\/api\/control-center(?:\/|$)/, "gameshop.read"],
+];
+
+function routeScope(request: Request) {
+  const path = new URL(request.url).pathname;
+  return ROUTE_SCOPE.find(([pattern]) => pattern.test(path))?.[1] ?? null;
+}
+
 export function authorizeRequest(request: Request): AuthDecision {
   const gatewayToken = process.env.GAME_SHOP_MCP_TOKEN?.trim();
   const production = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
@@ -13,8 +28,15 @@ export function authorizeRequest(request: Request): AuthDecision {
   if (provided?.startsWith("Bearer ")) {
     try {
       const payload = verifyAccessToken(provided.slice(7), oauthBase(request));
-      return { ok: true, mode: "oauth", scopes: payload.scope.split(/\s+/).filter(Boolean) };
-    } catch {}
+      const scopes = payload.scope.split(/\s+/).filter(Boolean);
+      const required = routeScope(request);
+      if (required && !scopes.includes(required)) {
+        return { ok: false, status: 403, error: `Insufficient OAuth scope: ${required}`, requiredScopes: [required] };
+      }
+      return { ok: true, mode: "oauth", scopes };
+    } catch (error) {
+      if (error && typeof error === "object" && "status" in error) return error as AuthDecision;
+    }
   }
   if (!gatewayToken && !process.env.GAME_SHOP_OAUTH_SIGNING_SECRET?.trim()) {
     if (production) return { ok: false, status: 503, error: "Gateway authentication is not configured." };
@@ -26,7 +48,7 @@ export function authorizeRequest(request: Request): AuthDecision {
 export function oauthChallenge(request:Request){const base=oauthBase(request);return `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;}
 
 const WRITE_TOOL=/(github_upsert|create_project_branch|create_project_pr|apply_patch|patch_worker|place_artifact)/i;
-const DEPLOY_TOOL=/(deploy|preview_deployment|release_to_production)/i;
+const DEPLOY_TOOL=/(deploy|preview_deployment|create_preview|release_to_production)/i;
 const QA_TOOL=/(verify|qa_|diagnostic|release_governor|repair)/i;
 const PLAN_TOOL=/(plan_|prepare_execution|route_|routing_matrix|build_matrix|motion_matrix)/i;
 const EXECUTE_TOOL=/(execute_|invoke_|orchestrate|generate_|cancel_|approve_|promote|persist_artifact|task_update|task_cancel)/i;

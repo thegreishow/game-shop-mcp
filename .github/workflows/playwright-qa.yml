@@ -15,6 +15,10 @@ on:
         description: Game Shop execution id
         required: false
         type: string
+      commit_sha:
+        description: Target project commit SHA represented by the preview
+        required: false
+        type: string
       interactions_json:
         description: JSON array of simple QA intents
         required: false
@@ -47,6 +51,8 @@ jobs:
             sleep 1
           done
       - name: Execute QA contract
+        id: qa_contract
+        continue-on-error: true
         env:
           GAME_SHOP_PLAYWRIGHT_MCP_URL: http://127.0.0.1:8931/mcp
           GAME_SHOP_QA_TARGET_URL: ${{ inputs.target_url }}
@@ -54,6 +60,32 @@ jobs:
           GAME_SHOP_QA_EXECUTION_ID: ${{ inputs.execution_id }}
           GAME_SHOP_QA_INTERACTIONS_JSON: ${{ inputs.interactions_json }}
         run: npx tsx scripts/playwright-ci-qa.ts
+      - name: Publish terminal evidence to Game Shop
+        if: always()
+        env:
+          WORKER_SECRET: ${{ secrets.GAME_SHOP_WORKER_SECRET }}
+          GAME_SHOP_BASE_URL: ${{ vars.GAME_SHOP_BASE_URL || 'https://game-shop-mcp.vercel.app' }}
+          PROJECT_ID: ${{ inputs.project_id }}
+          EXECUTION_ID: ${{ inputs.execution_id }}
+          COMMIT_SHA: ${{ inputs.commit_sha }}
+          PREVIEW_URL: ${{ inputs.target_url }}
+          RUN_ID: ${{ github.run_id }}
+          QA_OUTCOME: ${{ steps.qa_contract.outcome }}
+        run: |
+          if [ -z "$WORKER_SECRET" ] || [ -z "$PROJECT_ID" ]; then
+            echo "Evidence callback skipped: GAME_SHOP_WORKER_SECRET or project_id missing."
+            exit 0
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path='.gameshop-qa/evidence.json';
+          let evidence={};
+          try { evidence=JSON.parse(fs.readFileSync(path,'utf8')); } catch (error) { evidence={readError:String(error)}; }
+          const body={projectId:process.env.PROJECT_ID,executionId:process.env.EXECUTION_ID||undefined,provider:'playwright-ci',runId:process.env.RUN_ID,commitSha:process.env.COMMIT_SHA||undefined,previewUrl:process.env.PREVIEW_URL,status:process.env.QA_OUTCOME==='success'?'passed':'failed',evidence};
+          const response=await fetch(`${process.env.GAME_SHOP_BASE_URL}/qa/evidence`,{method:'POST',headers:{authorization:`Bearer ${process.env.WORKER_SECRET}`,'content-type':'application/json'},body:JSON.stringify(body)});
+          if(!response.ok)throw new Error(`Evidence callback failed: ${response.status} ${await response.text()}`);
+          console.log('Game Shop evidence callback accepted.');
+          NODE
       - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,3 +102,6 @@ jobs:
           path: /tmp/playwright-mcp.log
           if-no-files-found: ignore
           retention-days: 7
+      - name: Preserve QA failure status
+        if: steps.qa_contract.outcome == 'failure'
+        run: exit 1

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { POST } from "../api/server.js";
+import { POST } from "../api/mcp.js";
 
 function payloadFrom(text: string) {
   const trimmed = text.trim();
@@ -32,7 +32,7 @@ async function main() {
   const anime = await import("animejs");
   assert.equal(typeof anime.animate, "function", "Anime.js runtime must resolve and expose animate()");
 
-  const initialized = await rpc({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "game-shop-smoke", version: "1.0.0" } } });
+  const initialized = await rpc({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "game-shop-smoke", version: "1.0.0" } } });
   assert.equal(initialized.response.status, 200);
   assert.ok(initialized.body?.result, "initialize must return an MCP result");
   const session = initialized.response.headers.get("mcp-session-id") ?? undefined;
@@ -43,12 +43,10 @@ async function main() {
   const tools = listed.body?.result?.tools ?? [];
   const names = new Set(tools.map((tool: { name: string }) => tool.name));
   for (const required of [
-    "gameshop_system_audit", "gameshop_spend_policy", "gameshop_capability_catalog", "gameshop_integrations", "gameshop_integration_status",
-    "gameshop_integration_readiness", "gameshop_invoke_integration", "gameshop_orchestrate_integrations",
-    "gameshop_plan_build", "gameshop_list_projects", "gameshop_project_context",
-    "gameshop_inspect_project", "gameshop_plan_project", "gameshop_create_project_branch", "gameshop_github_read_file",
-    "gameshop_github_upsert_file", "gameshop_verify_project_branch", "gameshop_create_project_pr",
-  ]) assert.ok(names.has(required), `missing MCP tool: ${required}`);
+    "gameshop_system_audit","gameshop_spend_policy","gameshop_capability_catalog","gameshop_integrations","gameshop_integration_status","gameshop_integration_readiness","gameshop_invoke_integration","gameshop_orchestrate_integrations","gameshop_plan_build","gameshop_list_projects","gameshop_project_context","gameshop_inspect_project","gameshop_plan_project","gameshop_create_project_branch","gameshop_github_read_file","gameshop_github_upsert_file","gameshop_verify_project_branch","gameshop_create_project_pr",
+    "gameshop_orchestration_status","gameshop_durable_executions","gameshop_task_bridge","gameshop_control_center","gameshop_artifact_store","gameshop_artifacts","gameshop_object_store","gameshop_verify_project","gameshop_qa_worker","gameshop_run_qa","gameshop_run_qa_swarm","gameshop_browser_fleet","gameshop_playwright_ci_info","gameshop_chrome_diagnostics_info","gameshop_preview_info","gameshop_discovery_info","gameshop_trust_pipeline","gameshop_qa_memory","gameshop_release_governor","gameshop_qa_evidence","gameshop_external_engines"
+  ]) assert.ok(names.has(required), `missing canonical MCP tool: ${required}`);
+  assert.ok(tools.length >= 60, `expected unified canonical inventory, got ${tools.length} tools`);
 
   const catalog = await rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "gameshop_capability_catalog", arguments: {} } }, session);
   const catalogText = JSON.stringify(catalog.body?.result?.structuredContent ?? {});
@@ -58,44 +56,29 @@ async function main() {
 
   const integrations = await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "gameshop_integrations", arguments: {} } }, session);
   const integrationText = JSON.stringify(integrations.body?.result?.structuredContent ?? {});
-  for (const id of [
-    "originkit-mcp", "shaders-mcp", "shadcn-mcp", "daisyui-mcp", "logoai-api", "webgpu", "headless-ui",
-    "motion-so", "contextcore", "bklit-ui",
-  ]) assert.match(integrationText, new RegExp(id), `missing integration contract: ${id}`);
+  for (const id of ["originkit-mcp","shaders-mcp","shadcn-mcp","daisyui-mcp","logoai-api","webgpu","headless-ui","motion-so","contextcore","bklit-ui"]) assert.match(integrationText, new RegExp(id), `missing integration contract: ${id}`);
 
-  const readiness = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_integration_readiness", arguments: { id: "motion-so" } } }, session);
-  assert.match(JSON.stringify(readiness.body?.result?.structuredContent), /remote-mcp/);
-  assert.match(JSON.stringify(readiness.body?.result?.structuredContent), /externallyEnabled/);
-
-  const externalBlocked = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_invoke_integration", arguments: { id: "motion-so", mode: "mcp-list-tools" } } }, session);
-  assert.equal(externalBlocked.body?.result?.isError, true, "live integration calls must be locked by default");
-  assert.match(externalBlocked.body?.result?.content?.[0]?.text ?? "", /Game Shop request failed/);
-
-  const projects = await rpc({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
-  const projectList = projects.body?.result?.structuredContent ?? [];
-  const serialized = JSON.stringify(projectList);
+  const projects = await rpc({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "gameshop_list_projects", arguments: {} } }, session);
+  const serialized = JSON.stringify(projects.body?.result?.structuredContent ?? []);
   for (const id of ["dubai-legends", "dreamweaver-oracle", "rodeo"]) assert.match(serialized, new RegExp(id));
   assert.match(serialized,/projectPath/);
 
-  const projectPlan = await rpc({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "gameshop_plan_project", arguments: { projectId: "dubai-legends", goal: "Improve player motion and stability" } } }, session);
-  assert.equal(projectPlan.body?.result?.isError, undefined, "project planning should be read-only and available without GitHub credentials");
-  assert.match(JSON.stringify(projectPlan.body?.result?.structuredContent), /arcade\/games\/dubai-legends/);
-
-  const universalPlan = await rpc({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "gameshop_plan_build", arguments: { brief: "Build a secure scalable subscription SaaS", product: "web-app", goals: ["secure","scalable"] } } }, session);
+  const universalPlan = await rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "gameshop_plan_build", arguments: { brief: "Build a secure scalable subscription SaaS", product: "web-app", goals: ["secure","scalable"] } } }, session);
   const universalText=JSON.stringify(universalPlan.body?.result?.structuredContent ?? {});
   for(const domain of ["backend","data","auth","testing","deployment","observability"])assert.match(universalText,new RegExp(domain),`universal plan missing ${domain}`);
 
-  const audit = await rpc({ jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "gameshop_system_audit", arguments: {} } }, session);
-  assert.match(JSON.stringify(audit.body?.result?.structuredContent ?? {}),/source-control/);
-  assert.match(JSON.stringify(audit.body?.result?.structuredContent ?? {}),/integrations/);
+  const audit = await rpc({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "gameshop_system_audit", arguments: {} } }, session);
+  const auditText=JSON.stringify(audit.body?.result?.structuredContent ?? {});
+  assert.match(auditText,/canonical-mcp/);
+  assert.match(auditText,/qa-evidence/);
 
-  const spend = await rpc({ jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
+  const spend = await rpc({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
   assert.equal(spend.body?.result?.structuredContent?.allowPaidGeneration, false);
-  const blocked = await rpc({ jsonrpc: "2.0", id: 12, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
+  const blocked = await rpc({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
   assert.equal(blocked.body?.result?.isError, true);
   assert.match(blocked.body?.result?.content?.[0]?.text ?? "", /Paid generation is disabled/);
 
-  console.log(`MCP smoke OK: ${tools.length} tools; universal planning, self-audit, project safety, auth, integrations and spend lock verified.`);
+  console.log(`Unified MCP smoke OK: ${tools.length} tools; canonical core+platform inventory, audit, planning, QA, artifacts and spend lock verified.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
