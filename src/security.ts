@@ -3,7 +3,7 @@ import { oauthBase, verifyAccessToken } from "./oauth.js";
 const DEFAULT_RATE_LIMIT = 60;
 const windows = new Map<string, { count: number; resetAt: number }>();
 
-export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[] } | { ok: false; status: number; error: string };
+export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[] } | { ok: false; status: number; error: string; requiredScopes?: string[] };
 
 export function authorizeRequest(request: Request): AuthDecision {
   const gatewayToken = process.env.GAME_SHOP_MCP_TOKEN?.trim();
@@ -24,6 +24,46 @@ export function authorizeRequest(request: Request): AuthDecision {
 }
 
 export function oauthChallenge(request:Request){const base=oauthBase(request);return `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;}
+
+const WRITE_TOOL=/(github_upsert|create_project_branch|create_project_pr|apply_patch|patch_worker|place_artifact)/i;
+const DEPLOY_TOOL=/(deploy|preview_deployment|release_to_production)/i;
+const QA_TOOL=/(verify|qa_|diagnostic|release_governor|repair)/i;
+const PLAN_TOOL=/(plan_|prepare_execution|route_|routing_matrix|build_matrix|motion_matrix)/i;
+const EXECUTE_TOOL=/(execute_|invoke_|orchestrate|generate_|cancel_|approve_|promote|persist_artifact|task_update|task_cancel)/i;
+
+export function requiredScopesForTool(name:string):string[]{
+  if(DEPLOY_TOOL.test(name))return["gameshop.deploy"];
+  if(WRITE_TOOL.test(name))return["gameshop.write"];
+  if(QA_TOOL.test(name))return["gameshop.qa"];
+  if(PLAN_TOOL.test(name))return["gameshop.plan"];
+  if(EXECUTE_TOOL.test(name))return["gameshop.execute"];
+  return["gameshop.read"];
+}
+
+function toolCalls(payload:unknown):Array<{name:string}>{
+  const rows=Array.isArray(payload)?payload:[payload];
+  const calls:Array<{name:string}>=[];
+  for(const row of rows){
+    if(!row||typeof row!=="object")continue;
+    const rpc=row as Record<string,unknown>;
+    if(rpc.method!=="tools/call")continue;
+    const params=rpc.params as Record<string,unknown>|undefined;
+    if(params&&typeof params.name==="string")calls.push({name:params.name});
+  }
+  return calls;
+}
+
+export async function authorizeMcpToolRequest(request:Request,auth:AuthDecision):Promise<AuthDecision>{
+  if(!auth.ok||auth.mode!=="oauth")return auth;
+  if(request.method!=="POST")return auth;
+  let payload:unknown;
+  try{payload=await request.clone().json();}catch{return auth;}
+  const available=new Set(auth.scopes??[]);
+  const required=[...new Set(toolCalls(payload).flatMap(call=>requiredScopesForTool(call.name)))];
+  const missing=required.filter(scope=>!available.has(scope));
+  if(missing.length)return{ok:false,status:403,error:`Insufficient OAuth scope: ${missing.join(", ")}`,requiredScopes:missing};
+  return auth;
+}
 
 function clientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
