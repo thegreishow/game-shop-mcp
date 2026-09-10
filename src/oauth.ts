@@ -1,7 +1,10 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { consumeAuthorizationCode } from "./oauth-store.js";
 
-export const OAUTH_SCOPES=["gameshop.read","gameshop.plan","gameshop.execute","gameshop.qa","gameshop.write","gameshop.deploy"] as const;
+export const OAUTH_SCOPES=[
+  "gameshop.read","gameshop.plan","gameshop.generate","gameshop.github.read","gameshop.github.write",
+  "gameshop.integrations.read","gameshop.integrations.invoke","gameshop.qa","gameshop.execute","gameshop.write","gameshop.deploy"
+] as const;
 export type GameShopScope=typeof OAUTH_SCOPES[number];
 
 type SignedPayload={typ:"code"|"access";iss:string;aud:string;sub:string;client_id:string;scope:string;iat:number;exp:number;redirect_uri?:string;code_challenge?:string;jti:string};
