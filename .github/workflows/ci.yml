@@ -21,6 +21,8 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Vercel deployment policy
+        run: node scripts/check-vercel-deployment-policy.mjs
       - name: Vercel function budget
         run: node scripts/check-vercel-function-budget.mjs
       - name: Typecheck
