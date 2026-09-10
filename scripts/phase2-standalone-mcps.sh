@@ -24,9 +24,9 @@ add_remote() {
   fi
 }
 
-contains() {
+listed_with_url() {
   local name="$1" needle="$2"
-  codex mcp get "$name" 2>/dev/null | grep -Fq "$needle"
+  codex mcp list 2>/dev/null | grep -F "$name" | grep -Fq "$needle"
 }
 
 echo "== Game Shop standalone MCP phase 2 =="
@@ -38,7 +38,9 @@ add_remote "shaders" "https://shaders.com/mcp"
 # ElevenLabs compatibility repair for Codex clients whose OAuth resource metadata
 # resolves to the US hostname. The official global endpoint remains canonical for
 # other clients, but the user's Codex run reported an explicit resource mismatch.
-if exists "elevenlabs" && contains "elevenlabs" "https://api.elevenlabs.io/v1/mcp"; then
+# Use `codex mcp list` for endpoint detection because `codex mcp get` output is not
+# stable enough across Codex builds for exact URL matching.
+if exists "elevenlabs" && listed_with_url "elevenlabs" "https://api.elevenlabs.io/v1/mcp"; then
   echo "REPAIR elevenlabs -> https://api.us.elevenlabs.io/v1/mcp"
   codex mcp remove elevenlabs
   codex mcp add elevenlabs --url "https://api.us.elevenlabs.io/v1/mcp"
