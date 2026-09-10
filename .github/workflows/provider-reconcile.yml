@@ -1,0 +1,29 @@
+name: Game Shop Provider Reconcile
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reconcile pending provider jobs
+        env:
+          GAME_SHOP_WORKER_SECRET: ${{ secrets.GAME_SHOP_WORKER_SECRET }}
+        run: |
+          if [ -z "$GAME_SHOP_WORKER_SECRET" ]; then
+            echo "GAME_SHOP_WORKER_SECRET is not configured; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --retry 2 --max-time 90 \
+            -X POST \
+            -H "content-type: application/json" \
+            -H "x-game-shop-worker-secret: $GAME_SHOP_WORKER_SECRET" \
+            -d '{"limit":20}' \
+            https://game-shop-mcp.vercel.app/api/reconcile

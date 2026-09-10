@@ -1,11 +1,13 @@
 import { createMcpHandler } from "mcp-handler";
 import { registerCoreTools } from "../src/register-core-tools.js";
 import { registerPlatformTools } from "../src/register-platform-tools.js";
+import { registerFutureTools } from "../src/register-future-tools.js";
 import { routeMcp } from "../src/mcp-route.js";
 
 const handler=createMcpHandler(server=>{
   registerCoreTools(server);
   registerPlatformTools(server);
+  registerFutureTools(server);
 });
 
 async function route(request:Request){return routeMcp(request,handler);}
