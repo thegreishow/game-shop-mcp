@@ -7,10 +7,11 @@ let hydrated=false;
 async function hydrate(){
   if(hydrated)return;
   try{
-    // Operational policy/metadata hydrates first; the canonical arcade manifest
-    // hydrates last so game existence and project roots cannot drift from the site.
+    // Canonical game existence and project roots hydrate first. Operational
+    // registries are enrichment-only and may not introduce projects.
+    const canonical=await hydrateArcadeRegistry();
+    if(!canonical.available)return;
     await hydrateProjectRegistryV2();
-    await hydrateArcadeRegistry();
     hydrated=true;
   }catch{}
 }
