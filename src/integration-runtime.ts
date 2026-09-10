@@ -3,6 +3,7 @@ import { assertPaidGenerationAllowed } from "./spend.js";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_RESPONSE_CHARS = 250_000;
+const MCP_PROTOCOL_PREFERENCE=["2026-07-28","2025-11-25","2025-03-26"] as const;
 const BILLABLE_INTEGRATIONS = new Set([
   "motion-so", "ludo-ai", "meshy", "fal-ai", "replicate", "elevenlabs", "scenario", "logoai-api", "raylight-mcp", "manus-api",
 ]);
@@ -135,17 +136,24 @@ async function mcpRpc(integration: Integration, method: string, params: unknown,
     if (dataLines.length) payload = JSON.parse(dataLines.at(-1)!.slice(5).trim());
   }
   if (!payload) throw new Error(`${integration.name} returned an unreadable MCP response.`);
-  if (payload.error) throw new Error(`${integration.name} MCP call failed.`);
+  if (payload.error) throw new Error(`${integration.name} MCP call failed: ${String(payload.error?.message??"unknown error")}`);
   return { payload, session: nextSession };
 }
 
 async function initializeMcp(integration: Integration, timeoutMs: number) {
-  const init = await mcpRpc(integration, "initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "game-shop-mcp", version: "0.3.0" } }, undefined, 1, timeoutMs);
-  if (init.session) {
-    const headers: Record<string, string> = { accept: "application/json, text/event-stream", "content-type": "application/json", "mcp-session-id": init.session, ...authHeaders(integration) };
-    await fetch(integration.endpoint!, { method: "POST", headers, body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }), signal: AbortSignal.timeout(timeoutMs) });
+  let lastError:unknown=null;
+  for(const requestedVersion of MCP_PROTOCOL_PREFERENCE){
+    try{
+      const init = await mcpRpc(integration, "initialize", { protocolVersion: requestedVersion, capabilities: {}, clientInfo: { name: "game-shop-mcp", version: "0.4.0" } }, undefined, 1, timeoutMs);
+      const negotiated=String(init.payload?.result?.protocolVersion??requestedVersion);
+      if (init.session) {
+        const headers: Record<string, string> = { accept: "application/json, text/event-stream", "content-type": "application/json", "mcp-session-id": init.session, ...authHeaders(integration) };
+        await fetch(integration.endpoint!, { method: "POST", headers, body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized", params: {} }), signal: AbortSignal.timeout(timeoutMs) });
+      }
+      return{session:init.session,protocolVersion:negotiated,requestedVersion};
+    }catch(error){lastError=error;}
   }
-  return init.session;
+  throw lastError instanceof Error?lastError:new Error(`${integration.name} MCP initialization failed.`);
 }
 
 export async function invokeIntegration(input: IntegrationInvokeInput) {
@@ -159,14 +167,14 @@ export async function invokeIntegration(input: IntegrationInvokeInput) {
 
   if (mode === "mcp-list-tools" || mode === "mcp-call") {
     if (!integration.kinds.includes("mcp")) throw new Error(`${integration.name} is not registered as a remote MCP integration.`);
-    const session = await initializeMcp(integration, timeoutMs);
+    const initialized = await initializeMcp(integration, timeoutMs);
     if (mode === "mcp-list-tools") {
-      const listed = await mcpRpc(integration, "tools/list", {}, session, 2, timeoutMs);
-      return { integration: integration.id, mode, result: listed.payload.result };
+      const listed = await mcpRpc(integration, "tools/list", {}, initialized.session, 2, timeoutMs);
+      return { integration: integration.id, mode, protocolVersion:initialized.protocolVersion, result: listed.payload.result };
     }
     if (!input.tool) throw new Error("tool is required for mcp-call.");
-    const called = await mcpRpc(integration, "tools/call", { name: input.tool, arguments: input.arguments ?? {} }, session, 2, timeoutMs);
-    return { integration: integration.id, mode, tool: input.tool, result: called.payload.result };
+    const called = await mcpRpc(integration, "tools/call", { name: input.tool, arguments: input.arguments ?? {} }, initialized.session, 2, timeoutMs);
+    return { integration: integration.id, mode, protocolVersion:initialized.protocolVersion, tool: input.tool, result: called.payload.result };
   }
 
   if (!integration.kinds.includes("api")) throw new Error(`${integration.name} is not registered as a REST API integration.`);
@@ -195,3 +203,5 @@ export async function orchestrateIntegrations(steps: IntegrationStep[]) {
   }
   return { completed: true, results };
 }
+
+export function integrationRuntimeInfo(){return{externalExecutionEnabled:externalAllowed(),protocolPreference:MCP_PROTOCOL_PREFERENCE,billableIntegrations:[...BILLABLE_INTEGRATIONS],maxResponseChars:MAX_RESPONSE_CHARS,defaultTimeoutMs:DEFAULT_TIMEOUT_MS};}
