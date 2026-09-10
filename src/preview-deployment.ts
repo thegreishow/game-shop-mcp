@@ -1,5 +1,6 @@
 import { getProject } from "./projects.js";
 import { logEvent, recordPreview } from "./governance-ledger.js";
+import { assertOperationAllowed } from "./operation-policy.js";
 
 type VercelProject = { projectId:string; teamId?:string; name?:string; repoId?:string|number; deployHookUrl?:string };
 function config(projectId:string){const raw=process.env.GAME_SHOP_VERCEL_PROJECTS_JSON;if(!raw)return null;try{return (JSON.parse(raw) as Record<string,VercelProject>)[projectId]??null;}catch{return null;}}
@@ -7,8 +8,9 @@ function token(){return process.env.VERCEL_TOKEN?.trim()||null;}
 function headers(){const t=token();if(!t)throw new Error("VERCEL_TOKEN is not configured.");return{Authorization:`Bearer ${t}`,"content-type":"application/json"};}
 function api(path:string,teamId?:string){const url=new URL(`https://api.vercel.com${path}`);if(teamId)url.searchParams.set("teamId",teamId);return url;}
 async function json(url:URL|string,init?:RequestInit){const response=await fetch(url,{...init,signal:AbortSignal.timeout(30000)});const text=await response.text();let body:unknown=text;try{body=text?JSON.parse(text):null;}catch{}if(!response.ok)throw new Error(`Vercel request failed (${response.status}).`);return body;}
-export function previewDeploymentInfo(projectId?:string){return{provider:"vercel",configured:Boolean(process.env.VERCEL_TOKEN||process.env.GAME_SHOP_VERCEL_PROJECTS_JSON),project:projectId?config(projectId):undefined,modes:["git-auto-preview-discovery","deploy-hook","rest-git-source"],policy:"Preview only; production target is never selected by this adapter.",registry:"game_shop_previews"};}
+export function previewDeploymentInfo(projectId?:string){return{provider:"vercel",configured:Boolean(process.env.VERCEL_TOKEN||process.env.GAME_SHOP_VERCEL_PROJECTS_JSON),deployAllowed:process.env.GAME_SHOP_ALLOW_DEPLOY==="true",project:projectId?config(projectId):undefined,modes:["git-auto-preview-discovery","deploy-hook","rest-git-source"],policy:"Preview creation requires GAME_SHOP_ALLOW_DEPLOY=true; production target is never selected by this adapter.",registry:"game_shop_previews"};}
 export async function createPreviewDeployment(input:{projectId:string;branch:string;commitSha?:string;waitMs?:number}){
+  assertOperationAllowed("deploy","create preview deployment");
   const project=getProject(input.projectId);const cfg=config(input.projectId);
   if(!cfg)throw new Error("No Vercel mapping configured for project.");
   if(!/^gameshop\//.test(input.branch))throw new Error("Automatic preview deployment requires a gameshop/* branch.");
