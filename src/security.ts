@@ -3,7 +3,7 @@ import { oauthBase, verifyAccessToken } from "./oauth.js";
 const DEFAULT_RATE_LIMIT = 60;
 const windows = new Map<string, { count: number; resetAt: number }>();
 
-export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[] } | { ok: false; status: number; error: string; requiredScopes?: string[] };
+export type AuthDecision = { ok: true; mode?: "gateway"|"oauth"; scopes?: string[]; clientId?: string; subject?: string } | { ok: false; status: number; error: string; requiredScopes?: string[] };
 
 const ROUTE_SCOPE: Array<[RegExp, string]> = [
   [/\/api\/advanced(?:\/|$)/, "gameshop.execute"],
@@ -14,17 +14,49 @@ const ROUTE_SCOPE: Array<[RegExp, string]> = [
   [/\/api\/tasks(?:\/|$)/, "gameshop.execute"],
   [/\/api\/control-center(?:\/|$)/, "gameshop.read"],
 ];
-function routeScope(request: Request) {const path=new URL(request.url).pathname;return ROUTE_SCOPE.find(([pattern])=>pattern.test(path))?.[1]??null;}
-export function authorizeRequest(request: Request): AuthDecision {const gatewayToken=process.env.GAME_SHOP_MCP_TOKEN?.trim();const production=process.env.NODE_ENV==="production"||process.env.VERCEL_ENV==="production";const provided=request.headers.get("authorization")?.trim();if(gatewayToken&&provided===`Bearer ${gatewayToken}`)return{ok:true,mode:"gateway"};if(provided?.startsWith("Bearer ")){try{const payload=verifyAccessToken(provided.slice(7),oauthBase(request));const scopes=payload.scope.split(/\s+/).filter(Boolean);const required=routeScope(request);if(required&&!scopes.includes(required))return{ok:false,status:403,error:`Insufficient OAuth scope: ${required}`,requiredScopes:[required]};return{ok:true,mode:"oauth",scopes};}catch(error){if(error&&typeof error==="object"&&"status" in error)return error as AuthDecision;}}if(!gatewayToken&&!process.env.GAME_SHOP_OAUTH_SIGNING_SECRET?.trim()){if(production)return{ok:false,status:503,error:"Gateway authentication is not configured."};return{ok:true};}return{ok:false,status:401,error:"Unauthorized"};}
+function routeScope(request: Request) { const path=new URL(request.url).pathname; return ROUTE_SCOPE.find(([pattern])=>pattern.test(path))?.[1]??null; }
+const SCOPE_ALIASES: Record<string,string[]> = {
+  "gameshop.generate":["gameshop.execute"],
+  "gameshop.github.read":["gameshop.read"],
+  "gameshop.github.write":["gameshop.write"],
+  "gameshop.integrations.read":["gameshop.read"],
+  "gameshop.integrations.invoke":["gameshop.execute"],
+};
+function hasScope(available:Set<string>, required:string){return available.has(required)||(SCOPE_ALIASES[required]??[]).some(alias=>available.has(alias));}
+export function authorizeRequest(request: Request): AuthDecision {
+  const gatewayToken=process.env.GAME_SHOP_MCP_TOKEN?.trim();const production=process.env.NODE_ENV==="production"||process.env.VERCEL_ENV==="production";const provided=request.headers.get("authorization")?.trim();
+  if(gatewayToken&&provided===`Bearer ${gatewayToken}`)return{ok:true,mode:"gateway",clientId:"owner-gateway",subject:"game-shop-owner"};
+  if(provided?.startsWith("Bearer ")){try{const payload=verifyAccessToken(provided.slice(7),oauthBase(request));const scopes=payload.scope.split(/\s+/).filter(Boolean);const required=routeScope(request);if(required&&!hasScope(new Set(scopes),required))return{ok:false,status:403,error:`Insufficient OAuth scope: ${required}`,requiredScopes:[required]};return{ok:true,mode:"oauth",scopes,clientId:payload.client_id,subject:payload.sub};}catch(error){if(error&&typeof error==="object"&&"status" in error)return error as AuthDecision;}}
+  if(!gatewayToken&&!process.env.GAME_SHOP_OAUTH_SIGNING_SECRET?.trim()){if(production)return{ok:false,status:503,error:"Gateway authentication is not configured."};return{ok:true};}
+  return{ok:false,status:401,error:"Unauthorized"};
+}
 export function oauthChallenge(request:Request){const base=oauthBase(request);return `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;}
-const WRITE_TOOL=/(github_upsert|create_project_branch|create_project_pr|apply_patch|patch_worker|place_artifact|register_project|remove_project|record_preview|mark_preview_tested)/i;
+
+const GITHUB_READ_TOOL=/(inspect_project|github_read_file|verify_project_branch)/i;
+const GITHUB_WRITE_TOOL=/(github_upsert|create_project_branch|create_project_pr|apply_patch|place_artifact)/i;
+const INTEGRATION_READ_TOOL=/(integrations$|integration_status|integration_readiness|integration_health|trusted_portfolio)/i;
+const INTEGRATION_INVOKE_TOOL=/(invoke_integration|orchestrate_integrations|reconcile_|approve_capability|report_capability_incident)/i;
+const GENERATE_TOOL=/(generate_|spritecook_generate|meshy_text|fal_submit|replicate_predict|ludo_generate|eleven_speech|scenario_generate)/i;
 const DEPLOY_TOOL=/(deploy|preview_deployment|create_preview|release_to_production|promote_preview)/i;
-const QA_TOOL=/(verify|qa_|diagnostic|release_governor|repair|integration_health)/i;
+const QA_TOOL=/(verify|qa_|diagnostic|release_governor|repair)/i;
 const PLAN_TOOL=/(plan_|prepare_execution|route_|routing_matrix|build_matrix|motion_matrix|discover_gap|discovery_sweep|continuous_discovery)/i;
-const EXECUTE_TOOL=/(execute_|invoke_|orchestrate|generate_|cancel_|approve_|promote|persist_artifact|task_update|task_cancel|set_execution_budget|reserve_cost|settle_cost|reconcile_|handoff_execution|report_capability_incident)/i;
-export function requiredScopesForTool(name:string):string[]{if(DEPLOY_TOOL.test(name))return["gameshop.deploy"];if(WRITE_TOOL.test(name))return["gameshop.write"];if(QA_TOOL.test(name))return["gameshop.qa"];if(PLAN_TOOL.test(name))return["gameshop.plan"];if(EXECUTE_TOOL.test(name))return["gameshop.execute"];return["gameshop.read"];}
+const WRITE_TOOL=/(patch_worker|register_project|remove_project|record_preview|mark_preview_tested|update_artifact|create_artifact|set_execution_budget|reserve_cost|settle_cost|handoff_execution)/i;
+const EXECUTE_TOOL=/(execute_|orchestrate|cancel_|approve_|promote|persist_artifact|task_update|task_cancel)/i;
+export function requiredScopesForTool(name:string):string[]{
+  if(DEPLOY_TOOL.test(name))return["gameshop.deploy"];
+  if(GITHUB_WRITE_TOOL.test(name))return["gameshop.github.write"];
+  if(GITHUB_READ_TOOL.test(name))return["gameshop.github.read"];
+  if(GENERATE_TOOL.test(name))return["gameshop.generate"];
+  if(INTEGRATION_INVOKE_TOOL.test(name))return["gameshop.integrations.invoke"];
+  if(INTEGRATION_READ_TOOL.test(name))return["gameshop.integrations.read"];
+  if(QA_TOOL.test(name))return["gameshop.qa"];
+  if(PLAN_TOOL.test(name))return["gameshop.plan"];
+  if(WRITE_TOOL.test(name))return["gameshop.write"];
+  if(EXECUTE_TOOL.test(name))return["gameshop.execute"];
+  return["gameshop.read"];
+}
 function toolCalls(payload:unknown):Array<{name:string}>{const rows=Array.isArray(payload)?payload:[payload];const calls:Array<{name:string}>=[];for(const row of rows){if(!row||typeof row!=="object")continue;const rpc=row as Record<string,unknown>;if(rpc.method!=="tools/call")continue;const params=rpc.params as Record<string,unknown>|undefined;if(params&&typeof params.name==="string")calls.push({name:params.name});}return calls;}
-export async function authorizeMcpToolRequest(request:Request,auth:AuthDecision):Promise<AuthDecision>{if(!auth.ok||auth.mode!=="oauth")return auth;if(request.method!=="POST")return auth;let payload:unknown;try{payload=await request.clone().json();}catch{return auth;}const available=new Set(auth.scopes??[]);const required=[...new Set(toolCalls(payload).flatMap(call=>requiredScopesForTool(call.name)))];const missing=required.filter(scope=>!available.has(scope));if(missing.length)return{ok:false,status:403,error:`Insufficient OAuth scope: ${missing.join(", ")}`,requiredScopes:missing};return auth;}
+export async function authorizeMcpToolRequest(request:Request,auth:AuthDecision):Promise<AuthDecision>{if(!auth.ok||auth.mode!=="oauth")return auth;if(request.method!=="POST")return auth;let payload:unknown;try{payload=await request.clone().json();}catch{return auth;}const available=new Set(auth.scopes??[]);const required=[...new Set(toolCalls(payload).flatMap(call=>requiredScopesForTool(call.name)))];const missing=required.filter(scope=>!hasScope(available,scope));if(missing.length)return{ok:false,status:403,error:`Insufficient OAuth scope: ${missing.join(", ")}`,requiredScopes:missing};return auth;}
 function clientKey(request: Request) {const forwarded=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();return forwarded||request.headers.get("x-real-ip")||"unknown";}
 export function enforceRateLimit(request: Request): { ok: true } | { ok: false; retryAfter: number } {const configured=Number(process.env.GAME_SHOP_RATE_LIMIT_PER_MINUTE??DEFAULT_RATE_LIMIT);const limit=Number.isFinite(configured)&&configured>0?Math.floor(configured):DEFAULT_RATE_LIMIT;const now=Date.now();const key=clientKey(request);const current=windows.get(key);if(!current||current.resetAt<=now){windows.set(key,{count:1,resetAt:now+60_000});return{ok:true};}if(current.count>=limit)return{ok:false,retryAfter:Math.max(1,Math.ceil((current.resetAt-now)/1000))};current.count+=1;return{ok:true};}
 export function githubWritesAllowed(){return process.env.GAME_SHOP_ALLOW_GITHUB_WRITES==="true";}
