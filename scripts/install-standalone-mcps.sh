@@ -55,6 +55,10 @@ add_remote "elevenlabs" "https://api.elevenlabs.io/v1/mcp"
 add_remote "motionsites" "https://xgdzyqfalbibzelpdpvr.supabase.co/functions/v1/mcp"
 add_remote "preline" "https://mcp.preline.co"
 
+# Phase 2: verified direct MCPs that were missing from the first bootstrap.
+add_remote "originkit" "https://mcp.originkit.dev/mcp"
+add_remote "shaders" "https://shaders.com/mcp"
+
 # Verified local stdio MCP servers.
 add_stdio "magic-ui" npx -y @magicuidesign/mcp@latest
 add_stdio "heroui-react" npx -y @heroui/react-mcp@latest
@@ -76,6 +80,12 @@ Run:
 
 For OAuth-capable servers, authenticate individually as needed:
   codex mcp login <name>
+
+Phase 2 compatibility notes:
+- ElevenLabs: the canonical hosted endpoint is https://api.elevenlabs.io/v1/mcp, but some Codex OAuth metadata currently advertises the US resource https://api.us.elevenlabs.io/v1/mcp. Use scripts/phase2-standalone-mcps.sh to apply the Codex-specific compatibility repair when needed.
+- Motion.so: generic agents are expected to use OAuth 2.1 device flow; Codex's localhost browser callback can be rejected. Keep it registered and defer login until device-flow handling is available.
+- fal: direct MCP metadata may not satisfy Codex OAuth discovery. Its API-key/queue API remains valid, but Codex needs a compatible auth transport before this should be marked healthy.
+- Ludo: direct MCP requires ApiKey header semantics rather than normal OAuth/Bearer auth.
 
 Special cases kept out of automatic installation:
 - daisyUI Blueprint MCP: requires a paid Blueprint LICENSE + EMAIL; install only after those values are available.
