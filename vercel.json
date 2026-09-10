@@ -5,7 +5,7 @@
       "main": true,
       "release-*": true,
       "gameshop/release-*": true,
-      "*": false
+      "**": false
     }
   },
   "rewrites": [
