@@ -1,2 +1,0 @@
-import { oauthBase, oauthMetadata, protectedResourceMetadata } from "../../src/oauth.js";
-export async function GET(request:Request){const base=oauthBase(request);const path=new URL(request.url).pathname;const data=path.includes("oauth-protected-resource")?protectedResourceMetadata(base):oauthMetadata(base);return new Response(JSON.stringify(data),{headers:{"content-type":"application/json","cache-control":"public, max-age=300"}});}
