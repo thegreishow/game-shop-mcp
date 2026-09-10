@@ -15,7 +15,6 @@ type Policy = { api?: ApiRule[]; mcp?: McpRule[] };
 const READ: IntegrationOperationPolicy = { billing:'free', mutation:'read', operationClass:'read' };
 const GENERATE: IntegrationOperationPolicy = { billing:'potentially-paid', mutation:'write', operationClass:'generate' };
 const WRITE: IntegrationOperationPolicy = { billing:'free', mutation:'write', operationClass:'write' };
-const DESTRUCTIVE: IntegrationOperationPolicy = { billing:'free', mutation:'destructive', operationClass:'destructive' };
 
 const POLICIES: Record<string, Policy> = {
   '21st-dev': { mcp:[{tools:['list_components','search_components','get_component','listRegistryItems','searchRegistryItems','getRegistryItem'],policy:READ}] },
@@ -29,7 +28,6 @@ const POLICIES: Record<string, Policy> = {
   'elevenlabs': { mcp:[{tools:['list_voices','get_voice','list_models','get_history'],policy:READ},{tools:['text_to_speech','speech_to_speech','sound_effects','music','generate_audio'],policy:GENERATE}] },
   'preline-ui': { mcp:[{tools:['list_components','get_component','list_blocks','get_docs'],policy:READ}] },
   'daisyui-mcp': { mcp:[{tools:['list_components','get_component','search_components'],policy:READ}] },
-  'raylight-mcp': { mcp:[{tools:['list_projects','read_shot','render_frames'],policy:READ},{tools:['edit_shot','edit_animation'],policy:WRITE}] },
   'motionsites-mcp': { mcp:[{tools:['search','get_prompt','get_reference','list_references'],policy:READ}] },
   'unison-brain': { mcp:[{tools:['search','fetch','status','facts','recall'],policy:READ},{tools:['remember','write','edit','ingest'],policy:WRITE}] },
   'manus-custom-mcp': { mcp:[{tools:['list_tools','list_resources'],policy:READ}] },
