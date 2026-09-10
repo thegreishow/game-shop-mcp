@@ -2,7 +2,7 @@
 
 Game Shop MCP is the supervisory and execution layer for The Game Shop. It exposes a shared remote MCP surface to ChatGPT, Codex, Grok, Cursor, Claude and other compatible clients while keeping project credentials and provider keys server-side.
 
-The system is no longer only a provider gateway. It coordinates project context, build planning, controlled GitHub execution, QA evidence, artifacts, budgets, integrations, governance, trust, previews, provider reconciliation and cross-AI handoffs.
+The system coordinates project context, build planning, controlled GitHub execution, QA evidence, artifacts, budgets, integrations, governance, trust, previews, provider reconciliation and cross-AI handoffs.
 
 ## Operating model
 
@@ -14,7 +14,7 @@ OAuth / gateway authentication
    |
    v
 Game Shop MCP
-   |-- Project Registry V2 + project overlays
+   |-- canonical arcade inventory + Project Registry V2 enrichment
    |-- Planning / routing / execution preparation
    |-- Controlled GitHub project edits
    |-- QA / diagnostics / release governance
@@ -58,25 +58,15 @@ OAuth access is separated by capability class:
 
 Tool calls are classified and checked against the caller's scopes. Gateway-token access remains an owner/operator path.
 
-GitHub writes are separately locked behind:
+Independent opt-ins:
 
 ```text
 GAME_SHOP_ALLOW_GITHUB_WRITES=true
-```
-
-External integrations are separately locked behind:
-
-```text
 GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true
-```
-
-Paid generation is separately locked behind:
-
-```text
 GAME_SHOP_ALLOW_PAID_GENERATION=true
 ```
 
-These switches are intentionally independent. Enabling one does not imply permission for the others.
+Enabling one does not grant either of the others.
 
 ## External integration policy
 
@@ -96,24 +86,13 @@ Unknown operations are rejected. Generic destructive operations such as DELETE a
 
 Provider-specific adapters may implement richer workflows, but they must retain explicit permission and spend controls.
 
-## Project Registry V2
+## One game inventory authority
 
-Project Registry V2 is the operational project authority for Game Shop MCP. A registered project can include:
+`thegreishow/thegreishow.com:arcade/games/games.json` is the canonical source for which Game Shop games exist and where their project roots live.
 
-- project ID and name
-- product kind
-- GitHub repository and project root
-- default branch and framework
-- deployment provider/project
-- artifact destinations
-- QA policy and required regressions
-- permission profile
-- budget profile
-- brand context
+At MCP startup/request hydration, Game Shop reads that manifest through its GitHub credential and overlays the canonical IDs, names and project roots into the project system. This prevents the site catalog and MCP project inventory from silently diverging.
 
-When Supabase durable state is configured, project records are persisted there and hydrated into live project overlays before MCP work. Legacy project definitions remain only as a compatibility fallback during migration.
-
-New projects can be registered without adding hardcoded entries to `src/projects.ts`.
+Project Registry V2 remains the operational-enrichment layer for data that does not belong in the public game catalog, including deployment configuration, artifact destinations, QA policies, regressions, permission profiles, budgets and brand context. Legacy hardcoded projects remain compatibility fallback only and should be removed after production registry hydration is proven reliable.
 
 ## Controlled GitHub execution
 
@@ -130,36 +109,15 @@ Use `GAME_SHOP_GITHUB_TOKEN` as the preferred project credential. `GITHUB_TOKEN`
 
 ## Governance, trust and continuity
 
-v0.4 includes durable/supervisory systems for:
-
-- governance events and execution history
-- execution budgets and provider reservations/settlements
-- integration health
-- capability discovery
-- capability trust incidents and rescoring
-- preview registry/test status
-- provider job reconciliation
-- cross-AI handoff snapshots
-- control-center supervision
+v0.4 includes durable/supervisory systems for governance events, execution history, budgets, provider reservations/settlements, integration health, capability discovery, trust incidents/rescoring, preview status, provider reconciliation, cross-AI handoffs and control-center supervision.
 
 Scheduled workers can reconcile provider jobs and perform integration-health/discovery sweeps when `GAME_SHOP_WORKER_SECRET` is configured.
 
 ## Rate limiting
 
-Requests are separated into rate classes:
-
-- read
-- QA
-- execute
-- write
-- deploy
-- generation
-
-With Supabase configured, Game Shop uses the atomic distributed rate-limit RPC from migration `007_rate_limit.sql`. Otherwise it falls back to an in-memory limiter suitable for local development/single-instance use.
+Requests are separated into `read`, `qa`, `execute`, `write`, `deploy` and `generation` classes. With Supabase configured, Game Shop uses the atomic distributed rate-limit RPC from migration `007_rate_limit.sql`; otherwise it falls back to an in-memory limiter for local/single-instance use.
 
 ## Durable state
-
-Configure:
 
 ```text
 GAME_SHOP_SUPABASE_URL
@@ -175,7 +133,7 @@ The catalog includes remote MCPs, REST APIs, local/desktop MCPs, project librari
 
 A catalog entry does not automatically grant execution permission. Runtime readiness depends on integration type, credentials, external-execution policy and an explicit operation allowlist.
 
-Remote MCP initialization currently negotiates supported protocol versions with a v0.4 client identity.
+Remote MCP initialization negotiates supported protocol versions with a v0.4 client identity.
 
 ## Local setup
 
@@ -193,7 +151,7 @@ Default MCP endpoint:
 http://localhost:3000/mcp
 ```
 
-Useful checks:
+Checks:
 
 ```bash
 npm run typecheck
@@ -210,34 +168,22 @@ GAME_SHOP_MCP_TOKEN
 GAME_SHOP_OAUTH_SIGNING_SECRET
 GAME_SHOP_OAUTH_OWNER_SECRET
 GAME_SHOP_OAUTH_CLIENT_ID
-
 GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS
 GAME_SHOP_ALLOW_PAID_GENERATION
 GAME_SHOP_ALLOW_GITHUB_WRITES
-
 GAME_SHOP_GITHUB_TOKEN
 GAME_SHOP_PROJECTS_JSON
-
 GAME_SHOP_SUPABASE_URL
 GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY
 GAME_SHOP_ARTIFACT_BUCKET
 GAME_SHOP_WORKER_SECRET
 ```
 
-Provider and deployment credentials are documented in `.env.example`. Configure only the integrations actually being used.
+Provider and deployment credentials are documented in `.env.example`. Configure only integrations actually being used.
 
 ## CI
 
-The canonical CI verifies:
-
-1. TypeScript type safety
-2. MCP smoke behavior
-3. OAuth/PKCE behavior
-4. adversarial security checks
-
-The smoke suite verifies the canonical future-stack tool inventory plus governance, budgets, rate limits, registry behavior, integration health, trust, continuity and default spend blocking.
-
-The adversarial suite specifically checks deny-by-default integration policy and privilege/scope boundaries. Expand it whenever a new mutation or external execution path is introduced.
+Canonical CI verifies TypeScript type safety, MCP smoke behavior, OAuth/PKCE behavior and adversarial security checks. The smoke suite covers governance, budgets, rate limits, registry behavior, integration health, trust, continuity and default spend blocking. The adversarial suite checks deny-by-default integration policy and privilege/scope boundaries.
 
 ## Production rules
 
@@ -245,8 +191,8 @@ The adversarial suite specifically checks deny-by-default integration policy and
 - GitHub writes stay OFF unless explicitly approved.
 - External execution stays OFF unless explicitly approved.
 - Unknown external operations are denied.
-- Destructive operations require explicit design and authorization; they are not inherited from generic HTTP access.
+- Destructive operations require explicit design and authorization.
 - Keep autonomous edits inside the registered project root.
 - Never expose credentials in logs, tool responses, issues, commits or test output.
 - Prefer incremental game/runtime refactors over rewrites.
-- A capability is not considered production-ready until its safety boundary and regression path are tested.
+- A capability is not production-ready until its safety boundary and regression path are tested.
