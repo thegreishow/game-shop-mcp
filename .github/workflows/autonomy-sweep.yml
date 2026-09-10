@@ -1,0 +1,29 @@
+name: Game Shop Autonomy Sweep
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run integration health and discovery sweep
+        env:
+          GAME_SHOP_WORKER_SECRET: ${{ secrets.GAME_SHOP_WORKER_SECRET }}
+        run: |
+          if [ -z "$GAME_SHOP_WORKER_SECRET" ]; then
+            echo "GAME_SHOP_WORKER_SECRET is not configured; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --retry 2 --max-time 300 \
+            -X POST \
+            -H "content-type: application/json" \
+            -H "x-game-shop-worker-secret: $GAME_SHOP_WORKER_SECRET" \
+            -d '{"healthLimit":12}' \
+            https://game-shop-mcp.vercel.app/api/autonomy-sweep
