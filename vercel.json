@@ -10,6 +10,9 @@
     { "source": "/.well-known/oauth-protected-resource/mcp", "destination": "/api/oauth?route=metadata&kind=protected" },
     { "source": "/api/autonomy-sweep", "destination": "/api/worker?action=autonomy" },
     { "source": "/api/reconcile", "destination": "/api/worker?action=reconcile" },
+    { "source": "/api/diagnostics", "destination": "/api/utility?route=diagnostics" },
+    { "source": "/api/storage", "destination": "/api/utility?route=storage" },
+    { "source": "/api/tasks", "destination": "/api/utility?route=tasks" },
     { "source": "/qa/evidence", "destination": "/api/evidence" }
   ],
   "functions": {
