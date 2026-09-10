@@ -7,7 +7,7 @@ const requiredRules = {
   main: true,
   "release-*": true,
   "gameshop/release-*": true,
-  "*": false,
+  "**": false,
 };
 
 if (!deploymentEnabled || typeof deploymentEnabled !== "object" || Array.isArray(deploymentEnabled)) {
@@ -27,6 +27,11 @@ if (mismatches.length > 0) {
   process.exit(1);
 }
 
+if (Object.prototype.hasOwnProperty.call(deploymentEnabled, "*")) {
+  console.error('Vercel deployment policy must use "**": false; "*" does not safely cover slash-containing branch names.');
+  process.exit(1);
+}
+
 const extraEnabled = Object.entries(deploymentEnabled).filter(
   ([pattern, enabled]) => enabled === true && !(pattern in requiredRules),
 );
@@ -41,4 +46,4 @@ console.log("Vercel deployment policy OK:");
 console.log("  main -> production eligible");
 console.log("  release-* -> preview eligible");
 console.log("  gameshop/release-* -> preview eligible");
-console.log("  all other branches -> deployment disabled");
+console.log("  ** -> all other branches disabled, including slash-containing refs");
