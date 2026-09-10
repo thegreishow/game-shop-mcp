@@ -2,7 +2,7 @@ name: Game Shop CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, gameshop/phase-3]
   pull_request:
   workflow_dispatch:
 
@@ -27,3 +27,5 @@ jobs:
         run: npm run test:mcp
       - name: OAuth PKCE smoke tests
         run: npm run test:oauth
+      - name: Controlled game workflow smoke
+        run: npm run test:game-workflow
