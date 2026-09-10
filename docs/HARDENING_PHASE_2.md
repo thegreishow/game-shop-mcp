@@ -12,6 +12,7 @@ Implemented on `gameshop/hardening-phase-2`:
 - Vercel serverless function budget capped at 10 deployable functions
 - Vercel Git deployments gated to `main`, `release-*`, and `gameshop/release-*`
 - all other branches are explicitly deployment-disabled to prevent preview churn
+- the deployment gate is also installed on the repository default branch so Vercel can apply it before feature-branch builds are admitted
 - CI verifies both the function budget and deployment branch policy
 
 ## Vercel release policy
