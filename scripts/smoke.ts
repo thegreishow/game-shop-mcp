@@ -20,8 +20,9 @@ async function rpc(body: unknown, session?: string) {
 async function main() {
   process.env.NODE_ENV = "production";
   delete process.env.GAME_SHOP_MCP_TOKEN;
+  delete process.env.GAME_SHOP_OAUTH_SIGNING_SECRET;
   const closed = await POST(new Request("http://localhost/mcp", { method: "POST", body: "{}" }));
-  assert.equal(closed.status, 503, "production gateway must fail closed without GAME_SHOP_MCP_TOKEN");
+  assert.equal(closed.status, 503, "production gateway must fail closed without GAME_SHOP_MCP_TOKEN or OAuth signing secret");
 
   process.env.GAME_SHOP_MCP_TOKEN = "smoke-token";
   delete process.env.GAME_SHOP_ALLOW_PAID_GENERATION;
@@ -42,7 +43,7 @@ async function main() {
   const tools = listed.body?.result?.tools ?? [];
   const names = new Set(tools.map((tool: { name: string }) => tool.name));
   for (const required of [
-    "gameshop_spend_policy", "gameshop_capability_catalog", "gameshop_integrations", "gameshop_integration_status",
+    "gameshop_system_audit", "gameshop_spend_policy", "gameshop_capability_catalog", "gameshop_integrations", "gameshop_integration_status",
     "gameshop_integration_readiness", "gameshop_invoke_integration", "gameshop_orchestrate_integrations",
     "gameshop_plan_build", "gameshop_list_projects", "gameshop_project_context",
     "gameshop_inspect_project", "gameshop_plan_project", "gameshop_create_project_branch", "gameshop_github_read_file",
@@ -74,18 +75,27 @@ async function main() {
   const projectList = projects.body?.result?.structuredContent ?? [];
   const serialized = JSON.stringify(projectList);
   for (const id of ["dubai-legends", "dreamweaver-oracle", "rodeo"]) assert.match(serialized, new RegExp(id));
+  assert.match(serialized,/projectPath/);
 
   const projectPlan = await rpc({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "gameshop_plan_project", arguments: { projectId: "dubai-legends", goal: "Improve player motion and stability" } } }, session);
   assert.equal(projectPlan.body?.result?.isError, undefined, "project planning should be read-only and available without GitHub credentials");
   assert.match(JSON.stringify(projectPlan.body?.result?.structuredContent), /arcade\/games\/dubai-legends/);
 
-  const spend = await rpc({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
+  const universalPlan = await rpc({ jsonrpc: "2.0", id: 9, method: "tools/call", params: { name: "gameshop_plan_build", arguments: { brief: "Build a secure scalable subscription SaaS", product: "web-app", goals: ["secure","scalable"] } } }, session);
+  const universalText=JSON.stringify(universalPlan.body?.result?.structuredContent ?? {});
+  for(const domain of ["backend","data","auth","testing","deployment","observability"])assert.match(universalText,new RegExp(domain),`universal plan missing ${domain}`);
+
+  const audit = await rpc({ jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "gameshop_system_audit", arguments: {} } }, session);
+  assert.match(JSON.stringify(audit.body?.result?.structuredContent ?? {}),/source-control/);
+  assert.match(JSON.stringify(audit.body?.result?.structuredContent ?? {}),/integrations/);
+
+  const spend = await rpc({ jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "gameshop_spend_policy", arguments: {} } }, session);
   assert.equal(spend.body?.result?.structuredContent?.allowPaidGeneration, false);
-  const blocked = await rpc({ jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
+  const blocked = await rpc({ jsonrpc: "2.0", id: 12, method: "tools/call", params: { name: "gameshop_generate_character", arguments: { name: "smoke", prompt: "smoke test" } } }, session);
   assert.equal(blocked.body?.result?.isError, true);
   assert.match(blocked.body?.result?.content?.[0]?.text ?? "", /Paid generation is disabled/);
 
-  console.log(`MCP smoke OK: ${tools.length} tools; Anime.js, active MCP/API invocation, orchestration locks, project planning, auth and spend lock verified.`);
+  console.log(`MCP smoke OK: ${tools.length} tools; universal planning, self-audit, project safety, auth, integrations and spend lock verified.`);
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });

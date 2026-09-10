@@ -1,0 +1,57 @@
+name: Game Shop Chrome Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: HTTPS preview URL to diagnose
+        required: true
+        type: string
+      project_id:
+        description: Game Shop project id
+        required: false
+        type: string
+      execution_id:
+        description: Game Shop execution id
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+      CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS: true
+      CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chrome DevTools MCP CLI
+        run: npm install -g chrome-devtools-mcp@latest
+      - name: Prepare evidence workspace
+        run: mkdir -p .gameshop-chrome
+      - name: Execute Chrome diagnostics
+        env:
+          GAME_SHOP_CHROME_TARGET_URL: ${{ inputs.target_url }}
+          GAME_SHOP_CHROME_PROJECT_ID: ${{ inputs.project_id }}
+          GAME_SHOP_CHROME_EXECUTION_ID: ${{ inputs.execution_id }}
+        run: npx tsx scripts/chrome-diagnostics.ts
+      - name: Upload diagnostics evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gameshop-chrome-diagnostics
+          path: .gameshop-chrome/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop Chrome DevTools daemon
+        if: always()
+        run: chrome-devtools stop || true
