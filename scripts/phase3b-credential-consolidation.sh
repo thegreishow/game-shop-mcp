@@ -29,8 +29,7 @@ set +a
 python3 - "$ENV_FILE" "${vars[@]}" <<'PY'
 import os,sys,re,tempfile
 path=sys.argv[1]; names=sys.argv[2:]
-text=open(path).read()
-lines=text.splitlines()
+lines=open(path).read().splitlines()
 index={}
 for i,line in enumerate(lines):
     m=re.match(r'^([A-Z0-9_]+)=(.*)$',line)
@@ -42,46 +41,51 @@ for name in names:
     i=index.get(name)
     if i is None:
         lines.append(f'{name}={val}')
+        index[name]=len(lines)-1
         changed.append(name)
-    else:
-        current=lines[i].split('=',1)[1]
-        if current=='':
-            lines[i]=f'{name}={val}'
-            changed.append(name)
+    elif lines[i].split('=',1)[1]=='':
+        lines[i]=f'{name}={val}'
+        changed.append(name)
 fd,tmp=tempfile.mkstemp(dir=os.path.dirname(path),prefix='.providers.',text=True)
 with os.fdopen(fd,'w') as f:f.write('\n'.join(lines)+'\n')
 os.chmod(tmp,0o600); os.replace(tmp,path)
 print(f'IMPORTED_FROM_CURRENT_SHELL={len(changed)}')
 PY
 
-# Safe alias normalization for names we intentionally use in both MCP and API layers.
+# Safe alias normalization for names intentionally shared between MCP and API layers.
 python3 - "$ENV_FILE" <<'PY'
 import re,sys,tempfile,os
 path=sys.argv[1]
 lines=open(path).read().splitlines()
-vals={}
-pos={}
+vals={}; pos={}
 for i,l in enumerate(lines):
     m=re.match(r'^([A-Z0-9_]+)=(.*)$',l)
     if m: vals[m.group(1)]=m.group(2); pos[m.group(1)]=i
 pairs=[('MOTION_SO_API_KEY','MOTION_API_KEY'),('PRELINE_API_KEY','PRELINE_MCP_TOKEN')]
 changed=[]
+
+def set_value(name,value):
+    if name in pos:
+        lines[pos[name]]=f'{name}={value}'
+    else:
+        pos[name]=len(lines)
+        lines.append(f'{name}={value}')
+    vals[name]=value
+
 for a,b in pairs:
     av,bv=vals.get(a,''),vals.get(b,'')
     if av and not bv:
-        lines[pos[b]]=f'{b}={av}' if b in pos else lines.append(f'{b}={av}')
-        changed.append(b)
+        set_value(b,av); changed.append(b)
     elif bv and not av:
-        lines[pos[a]]=f'{a}={bv}' if a in pos else lines.append(f'{a}={bv}')
-        changed.append(a)
+        set_value(a,bv); changed.append(a)
 fd,tmp=tempfile.mkstemp(dir=os.path.dirname(path),prefix='.providers.',text=True)
 with os.fdopen(fd,'w') as f:f.write('\n'.join(lines)+'\n')
 os.chmod(tmp,0o600); os.replace(tmp,path)
 print(f'ALIASES_NORMALIZED={len(changed)}')
 PY
 
-# Optional Vercel import: pull into a temporary file only if this repo is linked and vercel is already authenticated.
-VERCEL_IMPORTED=0
+# Optional Vercel import: if the repo is linked and Vercel CLI is already authenticated,
+# pull into a temporary file and copy only known provider variables whose local slot is empty.
 if command -v vercel >/dev/null 2>&1 && [[ -f .vercel/project.json ]]; then
   tmpenv="$(mktemp)"
   if vercel env pull "$tmpenv" --yes >/dev/null 2>&1; then
@@ -101,20 +105,22 @@ for i,l in enumerate(lines):
     if m:pos[m.group(1)]=i
 changed=[]
 for n,v in found.items():
-    if n in pos and lines[pos[n]].split('=',1)[1]=='':
-        lines[pos[n]]=f'{n}={v}'; changed.append(n)
+    if n in pos:
+        if lines[pos[n]].split('=',1)[1]=='':
+            lines[pos[n]]=f'{n}={v}'; changed.append(n)
+    else:
+        lines.append(f'{n}={v}'); pos[n]=len(lines)-1; changed.append(n)
 fd,tmp=tempfile.mkstemp(dir=os.path.dirname(dst),prefix='.providers.',text=True)
 with os.fdopen(fd,'w') as f:f.write('\n'.join(lines)+'\n')
 os.chmod(tmp,0o600); os.replace(tmp,dst)
-print(len(changed))
+print(f'IMPORTED_FROM_VERCEL={len(changed)}')
 PY
-    VERCEL_IMPORTED="$(python3 - "$tmpenv" "$ENV_FILE" "${vars[@]}" <<'PY'
-# report-only no-op; import already performed above
-print(0)
-PY
-)"
+  else
+    echo 'VERCEL_IMPORT=skipped (env pull unavailable or not authenticated)'
   fi
   rm -f "$tmpenv"
+else
+  echo 'VERCEL_IMPORT=skipped (repo not linked or vercel CLI unavailable)'
 fi
 
 set -a
