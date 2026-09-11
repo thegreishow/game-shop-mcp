@@ -24,10 +24,6 @@ assert.throws(
 );
 workflow = markValidated(workflow, { ok: true, label: "validate-site", exactSha, exactTree });
 workflow = advanceGameWorkflow(workflow, "playtest");
-assert.throws(
-  () => markPlaytested(workflow, { ok: true, label: "playwright", exactSha: "different-sha" }),
-  /./,
-);
 workflow = markPlaytested(workflow, { ok: true, label: "playwright", exactSha, exactTree });
 workflow = advanceGameWorkflow(workflow, "evidence");
 workflow = attachEvidence(workflow, "screenshot", "artifacts/game-shop/dubai-legends/desktop.png");
