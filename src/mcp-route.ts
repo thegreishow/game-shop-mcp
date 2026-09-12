@@ -2,8 +2,19 @@ import { authorizeMcpToolRequest, authorizeRequest, oauthChallenge } from "./sec
 import { enforceDistributedRateLimit } from "./distributed-rate-limit.js";
 import { logEvent } from "./governance-ledger.js";
 import { hydrateProjectRegistryV2 } from "./project-registry-v2.js";
+import { hydrateArcadeRegistry } from "./arcade-registry.js";
 let hydrated=false;
-async function hydrate(){if(hydrated)return;try{await hydrateProjectRegistryV2();hydrated=true;}catch{}}
+async function hydrate(){
+  if(hydrated)return;
+  try{
+    // Canonical game existence and project roots hydrate first. Operational
+    // registries are enrichment-only and may not introduce projects.
+    const canonical=await hydrateArcadeRegistry();
+    if(!canonical.available)return;
+    await hydrateProjectRegistryV2();
+    hydrated=true;
+  }catch{}
+}
 export async function guardMcpRequest(request: Request) {
   const started=Date.now();await hydrate();let auth=authorizeRequest(request);if(auth.ok)auth=await authorizeMcpToolRequest(request,auth);
   if(!auth.ok){const headers:Record<string,string>={"content-type":"application/json"};if(auth.status===401)headers["www-authenticate"]=oauthChallenge(request);if(auth.status===403&&auth.requiredScopes?.length)headers["www-authenticate"]=`${oauthChallenge(request)}, scope="${auth.requiredScopes.join(" ")}"`;return{ok:false as const,response:new Response(JSON.stringify({error:auth.error,requiredScopes:auth.requiredScopes??undefined}),{status:auth.status,headers})};}

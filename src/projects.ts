@@ -1,14 +1,61 @@
 import { getProjectOverlay, listProjectOverlays } from "./project-overlay.js";
-export type GameProjectContext = {id:string;name?:string;repo:string;defaultBranch:string;framework?:string;projectPath?:string;gamePath?:string;productKind?:string;artStyle?:string;notes?:string;verifyPaths?:string[]};
+
+export type GameProjectContext = {
+  id: string;
+  name?: string;
+  repo: string;
+  defaultBranch: string;
+  framework?: string;
+  projectPath?: string;
+  gamePath?: string;
+  productKind?: string;
+  artStyle?: string;
+  notes?: string;
+  verifyPaths?: string[];
+};
+
 export type ProjectContext = GameProjectContext;
-const CORE_PROJECTS: ProjectContext[] = [
-{id:"dubai-legends",name:"Dubai Legends",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/dubai-legends",gamePath:"arcade/games/dubai-legends",artStyle:"cinematic arcade cricket",notes:"Cricket game. Prioritize stability, natural player motion, batting/bowling/fielding animation and cinematic match presentation.",verifyPaths:["arcade/games/dubai-legends"]},
-{id:"dreamweaver-oracle",name:"Dreamweaver Oracle",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/dreamweaver-oracle",gamePath:"arcade/games/dreamweaver-oracle",artStyle:"psychedelic cosmic arcade",notes:"Space-action game. Preserve established world/animation language while improving character, motion, audio and gameplay polish.",verifyPaths:["arcade/games/dreamweaver-oracle"]},
-{id:"rodeo",name:"Rodeo: Are You Ready?",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/rodeo-are-you-ready",gamePath:"arcade/games/rodeo-are-you-ready",artStyle:"cinematic western music arcade",notes:"Rodeo game tied to The Grei Show release/promo world. Preserve music identity while improving characters, gameplay and premium presentation.",verifyPaths:["arcade/games/rodeo-are-you-ready"]},
-];
-function normalizeProject(value:ProjectContext):ProjectContext{const projectPath=value.projectPath||value.gamePath;return{...value,projectPath,gamePath:value.gamePath||projectPath,productKind:value.productKind||value.framework||"other"};}
-function configuredProjects():ProjectContext[]{let base=CORE_PROJECTS.map(normalizeProject);const raw=process.env.GAME_SHOP_PROJECTS_JSON;if(raw){try{const parsed=JSON.parse(raw);if(Array.isArray(parsed)){const extra=parsed.filter((v:any)=>v&&typeof v.id==="string"&&typeof v.repo==="string"&&typeof v.defaultBranch==="string").map(normalizeProject);const merged=new Map(base.map(p=>[p.id,p]));for(const p of extra)merged.set(p.id,p);base=[...merged.values()];}}catch{}}
- const merged=new Map(base.map(p=>[p.id,p]));for(const project of listProjectOverlays())merged.set(project.id,normalizeProject(project));return[...merged.values()];}
-export function listProjects(){return configuredProjects();}
-export function getProject(id:string){const overlay=getProjectOverlay(id);if(overlay)return normalizeProject(overlay);const project=configuredProjects().find(c=>c.id===id);if(!project)throw new Error("Project is not configured in the Game Shop allowlist.");return project;}
-export function projectContext(id:string){const project=getProject(id);const githubReadToken=process.env.GAME_SHOP_GITHUB_TOKEN||process.env.GITHUB_TOKEN;return{...project,execution:{githubReadConfigured:Boolean(githubReadToken),githubCredential:githubReadToken?(process.env.GAME_SHOP_GITHUB_TOKEN?"GAME_SHOP_GITHUB_TOKEN":"GITHUB_TOKEN"):null,githubWritesAllowed:process.env.GAME_SHOP_ALLOW_GITHUB_WRITES==="true",externalIntegrationsAllowed:process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS==="true",paidGenerationAllowed:process.env.GAME_SHOP_ALLOW_PAID_GENERATION==="true"}};}
+
+function normalizeProject(value: ProjectContext): ProjectContext {
+  const projectPath = value.projectPath || value.gamePath;
+  return {
+    ...value,
+    projectPath,
+    gamePath: value.gamePath || projectPath,
+    productKind: value.productKind || value.framework || "other",
+  };
+}
+
+// Project existence and repository roots are authoritative only when hydrated
+// from arcade/games/games.json. Operational registries may enrich these
+// overlays, but they cannot introduce projects independently.
+export function listProjects() {
+  return listProjectOverlays().map(normalizeProject);
+}
+
+export function getProject(id: string) {
+  const overlay = getProjectOverlay(id);
+  if (!overlay) {
+    throw new Error("Project is not present in the canonical Game Shop arcade registry.");
+  }
+  return normalizeProject(overlay);
+}
+
+export function projectContext(id: string) {
+  const project = getProject(id);
+  const githubReadToken = process.env.GAME_SHOP_GITHUB_TOKEN || process.env.GITHUB_TOKEN;
+  return {
+    ...project,
+    execution: {
+      githubReadConfigured: Boolean(githubReadToken),
+      githubCredential: githubReadToken
+        ? process.env.GAME_SHOP_GITHUB_TOKEN
+          ? "GAME_SHOP_GITHUB_TOKEN"
+          : "GITHUB_TOKEN"
+        : null,
+      githubWritesAllowed: process.env.GAME_SHOP_ALLOW_GITHUB_WRITES === "true",
+      externalIntegrationsAllowed: process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS === "true",
+      paidGenerationAllowed: process.env.GAME_SHOP_ALLOW_PAID_GENERATION === "true",
+    },
+  };
+}
