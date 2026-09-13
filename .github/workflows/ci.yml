@@ -41,3 +41,12 @@ jobs:
         run: npm run snapshot:ecosystem
       - name: Validate generated JSON
         run: node -e 'JSON.parse(require("fs").readFileSync("ecosystem.json","utf8")); JSON.parse(require("fs").readFileSync("mcp.json","utf8")); console.log("snapshot JSON valid")'
+      - name: Upload generated ecosystem snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecosystem-snapshots
+          path: |
+            ecosystem.json
+            mcp.json
+          if-no-files-found: error
+          retention-days: 7
