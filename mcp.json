@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "note": "Secret-free portable MCP configuration. Run npm run snapshot:ecosystem to regenerate from src/integrations.ts.",
+  "gameShop": {
+    "transport": "streamable-http",
+    "url": "https://game-shop-mcp.vercel.app/api/mcp",
+    "auth": "Bearer ${GAME_SHOP_MCP_TOKEN}",
+    "env": ["GAME_SHOP_MCP_TOKEN"]
+  },
+  "servers": {
+    "21st-dev": { "url": "https://21st.dev/api/mcp", "env": ["API_KEY_21ST"] },
+    "motion-so": { "url": "https://mcp.motion.so/mcp", "env": ["MOTION_SO_API_KEY"], "auth": "OAuth preferred; bearer/service key supported" },
+    "raylight": { "url": "https://api.raylight.app/mcp", "auth": "OAuth" },
+    "ludo": { "url": "https://mcp.ludo.ai/mcp", "env": ["LUDO_API_KEY"], "auth": "ApiKey" },
+    "fal": { "url": "https://mcp.fal.ai/mcp", "env": ["FAL_KEY"] },
+    "replicate": { "url": "https://mcp.replicate.com", "env": ["REPLICATE_API_TOKEN"], "status": "auth-deferred" },
+    "elevenlabs": { "url": "https://api.elevenlabs.io/v1/mcp", "env": ["ELEVENLABS_API_KEY"] },
+    "originkit": { "url": "https://mcp.originkit.dev/mcp", "env": ["ORIGINKIT_API_KEY"] },
+    "shaders": { "url": "https://shaders.com/mcp", "env": ["SHADERS_API_KEY"] },
+    "preline": { "url": "https://mcp.preline.co", "env": ["PRELINE_API_KEY"] },
+    "kibo-ui": { "url": "https://www.kibo-ui.com/api/mcp/mcp", "status": "vendor-blocked-http-500" }
+  },
+  "localServers": {
+    "contextcore": { "transport": "stdio", "command": "~/.local/share/game-shop/contextcore-mcp-wrapper.sh", "status": "verify-local-runtime" },
+    "wangp": { "transport": "stdio", "command": "python wgp.py --mcp --mcp-transport stdio", "status": "opt-in-heavy-local-runtime" },
+    "spline": { "transport": "desktop", "status": "requires-spline-app" }
+  }
+}
