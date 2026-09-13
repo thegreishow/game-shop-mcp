@@ -22,8 +22,11 @@ for (const provider of sdk) {
   );
 }
 
-if (sdk.length !== 5) throw new Error(`Expected 5 SDK Hub providers, got ${sdk.length}`);
-if (adapters.length !== 5) throw new Error(`Expected 5 Phase 2 adapters, got ${adapters.length}`);
+if (sdk.length !== 6) throw new Error(`Expected 6 SDK Hub providers, got ${sdk.length}`);
+if (adapters.length !== 5) throw new Error(`Expected 5 Phase 2 media adapters, got ${adapters.length}`);
+if (!sdk.find((row) => row.id === "podium" && row.packageName === "@podium-sdk/node-sdk")) {
+  throw new Error("Expected Podium SDK metadata in provider health smoke.");
+}
 if (!summary.rows.find((row) => row.id === "kibo-ui" && row.state === "vendor-blocked")) {
   throw new Error("Expected Kibo vendor blocker to remain represented in versioned health data.");
 }
