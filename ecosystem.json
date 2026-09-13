@@ -1,55 +1,3834 @@
 {
   "schemaVersion": 2,
-  "snapshotState": "checked-in seed; refresh with npm run snapshot:ecosystem",
   "repository": "thegreishow/game-shop-mcp",
   "canonicalSources": {
-    "fullProviderCapabilities": "src/integrations.ts",
-    "gameArtProviderContracts": "src/providers.ts",
-    "liveRestOperations": "src/external-engines.ts",
-    "sdkPackagesAndRouting": "src/sdk-hub.ts",
-    "providerAdapters": "src/provider-adapters-v2.ts",
-    "providerHealthAndBlockers": "src/provider-health-v2.ts",
-    "realOrchestration": "src/real-orchestration.ts",
+    "integrations": "src/integrations.ts",
+    "providers": "src/providers.ts",
+    "externalEngines": "src/external-engines.ts",
+    "sdkHub": "src/sdk-hub.ts",
+    "adapters": "src/provider-adapters-v2.ts",
+    "health": "src/provider-health-v2.ts",
+    "orchestration": "src/real-orchestration.ts",
     "artifactSchema": "schemas/artifact.schema.json",
-    "spendRules": "src/spend.ts",
-    "securityRules": "src/security.ts",
-    "mcpConfig": "mcp.json",
-    "agentHandoff": "AGENTS.md"
+    "spend": "src/spend.ts",
+    "security": "src/security.ts"
   },
-  "sdkHub": {
-    "providers": {
-      "replicate": { "package": "replicate", "version": "^1.4.0", "install": "npm install replicate", "env": ["REPLICATE_API_TOKEN"], "apiBase": "https://api.replicate.com/v1", "status": "auth-deferred" },
-      "fal": { "package": "@fal-ai/client", "version": "^1.10.1", "install": "npm install @fal-ai/client", "env": ["FAL_KEY"], "apiBase": "https://queue.fal.run", "status": "configured" },
-      "elevenlabs": { "package": "@elevenlabs/elevenlabs-js", "version": "^2.68.0", "install": "npm install @elevenlabs/elevenlabs-js", "env": ["ELEVENLABS_API_KEY"], "apiBase": "https://api.elevenlabs.io/v1", "status": "ready" },
-      "scenario": { "package": "@scenario-labs/sdk", "version": "^3.1.0", "install": "npm install @scenario-labs/sdk", "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"], "apiBase": "https://api.cloud.scenario.com/v1", "status": "auth-deferred" },
-      "cloudinary": { "package": "cloudinary", "version": "^2.11.0", "install": "npm install cloudinary", "env": ["CLOUDINARY_URL"], "apiBase": "https://api.cloudinary.com", "status": "configured" }
+  "integrations": [
+    {
+      "id": "magic-ui",
+      "name": "Magic UI",
+      "kinds": [
+        "mcp",
+        "cli",
+        "registry"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "install": "npx @magicuidesign/cli@latest install cursor",
+      "capabilities": [
+        "component-list",
+        "component-search",
+        "component-source",
+        "templates",
+        "animated-ui"
+      ],
+      "notes": "Official MCP and CLI. Client-specific install targets vary; Game Shop should install into the target project/client rather than mirror components."
     },
-    "routing": {
-      "model-inference": ["fal", "replicate"],
-      "image-generation": ["fal", "scenario", "replicate", "elevenlabs"],
-      "video-generation": ["fal", "scenario", "replicate", "elevenlabs"],
-      "audio-generation": ["elevenlabs", "fal", "scenario", "replicate"],
-      "speech-generation": ["elevenlabs"],
-      "3d-generation": ["scenario", "fal", "replicate"],
-      "upscaling": ["replicate", "fal", "scenario"],
-      "asset-upload": ["cloudinary"],
-      "asset-management": ["cloudinary", "scenario"]
+    {
+      "id": "kibo-ui",
+      "name": "Kibo UI",
+      "kinds": [
+        "mcp",
+        "cli",
+        "registry"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "website",
+        "web-app"
+      ],
+      "install": "npx kibo-ui add",
+      "capabilities": [
+        "component-docs",
+        "component-install",
+        "shadcn-components",
+        "product-ui",
+        "data-ui"
+      ],
+      "notes": "Official component library with MCP support and on-demand CLI installation."
+    },
+    {
+      "id": "heroui",
+      "name": "HeroUI",
+      "kinds": [
+        "mcp",
+        "cli",
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "website",
+        "web-app",
+        "mobile-app"
+      ],
+      "install": "npx -y @heroui/react-mcp@latest",
+      "capabilities": [
+        "react-components",
+        "react-native-components",
+        "component-docs",
+        "project-init",
+        "install",
+        "upgrade",
+        "doctor",
+        "agent-docs"
+      ],
+      "notes": "Official React MCP package @heroui/react-mcp uses stdio; HeroUI Native also exposes an official MCP. CLI supports web projects and Native supports Expo/React Native."
+    },
+    {
+      "id": "impeccable",
+      "name": "Impeccable",
+      "kinds": [
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "design-reference",
+        "website",
+        "web-app",
+        "mobile-app",
+        "agent-platform"
+      ],
+      "install": "npx impeccable install",
+      "capabilities": [
+        "design-context",
+        "audit",
+        "critique",
+        "polish",
+        "live-iteration",
+        "detector",
+        "design-hooks",
+        "design-system-drift",
+        "ui-verification"
+      ],
+      "notes": "Agent design skill plus deterministic detector CLI. Strong verifier/repair-loop integration; detector can run as a pre-ship quality gate."
+    },
+    {
+      "id": "podium",
+      "name": "Podium",
+      "kinds": [
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "commerce",
+        "website",
+        "web-app",
+        "mobile-app",
+        "agent-platform"
+      ],
+      "endpoint": "https://api.podium.build/api/v1",
+      "env": [
+        "PODIUM_API_KEY"
+      ],
+      "auth": "Bearer token; live keys use podium_live_ prefix and test keys use podium_test_.",
+      "capabilities": [
+        "products",
+        "creators",
+        "users",
+        "orders",
+        "payments",
+        "campaigns",
+        "rewards",
+        "companion",
+        "task-pool",
+        "search",
+        "webhooks",
+        "agentic-commerce"
+      ],
+      "notes": "Verified REST API. Useful for commerce/product infrastructure beyond games."
+    },
+    {
+      "id": "skiper-ui",
+      "name": "Skiper UI",
+      "kinds": [
+        "registry",
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "install": "npx shadcn add @skiper-ui/skiper40",
+      "capabilities": [
+        "animated-components",
+        "shadcn-registry",
+        "component-install"
+      ],
+      "notes": "Verified shadcn registry. Pro installs require SKIPER_LICENSE_KEY and licensed registry access; never mirror Pro source."
+    },
+    {
+      "id": "smoothui",
+      "name": "SmoothUI",
+      "kinds": [
+        "reference",
+        "registry"
+      ],
+      "state": "ready",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "animated-react-components",
+        "ui-blocks",
+        "motion",
+        "gsap",
+        "shadcn-compatible"
+      ],
+      "notes": "Verified production-ready animated React component and block catalog; no separate public MCP/API promoted in this pass."
+    },
+    {
+      "id": "unlumen-ui",
+      "name": "Unlumen UI",
+      "kinds": [
+        "reference",
+        "registry"
+      ],
+      "state": "ready",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "react-components",
+        "shadcn-components",
+        "motion-ui",
+        "design-reference"
+      ],
+      "notes": "Verified UI library with open-source primitives and licensed Pro components. Do not redistribute paid source."
+    },
+    {
+      "id": "horizonx",
+      "name": "HorizonX",
+      "kinds": [
+        "reference"
+      ],
+      "state": "ready",
+      "domains": [
+        "ui",
+        "design-reference",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "ui-kits",
+        "figma",
+        "coded-templates",
+        "design-systems",
+        "commercial-assets"
+      ],
+      "notes": "Premium design/code library. Commercial use is permitted for downloaded assets under membership, but source redistribution/resale is prohibited; no public programmable API verified."
+    },
+    {
+      "id": "vengeance-ui",
+      "name": "Vengeance UI",
+      "kinds": [
+        "cli",
+        "registry"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "animated-components",
+        "component-install",
+        "shader-ui",
+        "interactive-ui"
+      ],
+      "notes": "Verified animated component library with documented CLI install flows; exact component commands are selected from its docs rather than hard-coded globally."
+    },
+    {
+      "id": "chatterbox-tts",
+      "name": "Chatterbox TTS",
+      "kinds": [
+        "library",
+        "cli"
+      ],
+      "state": "local-app-required",
+      "domains": [
+        "audio",
+        "website",
+        "web-app",
+        "mobile-app",
+        "game",
+        "interactive-experience"
+      ],
+      "install": "pip install chatterbox-tts",
+      "capabilities": [
+        "text-to-speech",
+        "voice-cloning",
+        "multilingual-speech",
+        "emotion-control",
+        "voice-conversion",
+        "watermarking"
+      ],
+      "notes": "Official Resemble AI open-source MIT TTS family. Local GPU/runtime integration; use only voices/reference audio the operator has permission to use."
+    },
+    {
+      "id": "21st-dev",
+      "name": "21st.dev",
+      "kinds": [
+        "mcp",
+        "cli",
+        "registry"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "agent-platform"
+      ],
+      "endpoint": "https://21st.dev/api/mcp",
+      "install": "npx @21st-dev/cli@latest init --client codex",
+      "env": [
+        "API_KEY_21ST"
+      ],
+      "auth": "API key for CLI/CI; hosted MCP can use interactive sign-in where supported.",
+      "capabilities": [
+        "component-search",
+        "component-install",
+        "ui-generation",
+        "themes",
+        "templates",
+        "publishing",
+        "mcp-app-ui"
+      ],
+      "notes": "Official MCP/CLI; preserve catalog licensing."
+    },
+    {
+      "id": "motion-ai-kit",
+      "name": "Motion AI Kit",
+      "kinds": [
+        "mcp",
+        "cli",
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "motion",
+        "ui",
+        "3d"
+      ],
+      "install": "npx motion-ai@latest",
+      "capabilities": [
+        "motion-docs",
+        "example-search",
+        "transition-editor",
+        "performance-audit",
+        "css-generation",
+        "threejs-motion"
+      ],
+      "notes": "Installer wires hosted MCP servers and Motion skill. Current hosted flow replaces older local-token configuration."
+    },
+    {
+      "id": "motion-so",
+      "name": "Mosaic Motion",
+      "kinds": [
+        "mcp",
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "video",
+        "motion",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.motion.so/mcp",
+      "env": [
+        "MOTION_SO_API_KEY"
+      ],
+      "auth": "OAuth 2.1 is preferred for MCP; service-account or Bearer Motion API keys are supported. Game Shop uses MOTION_SO_API_KEY as its local env name.",
+      "capabilities": [
+        "prompt-to-video",
+        "session-create",
+        "session-poll",
+        "followup",
+        "design-system",
+        "style-reference",
+        "attachments",
+        "source-audit"
+      ],
+      "notes": "Official MCP and REST API. REST base is https://api.motion.so/api/motion with POST /sessions and GET /sessions/{job_id}. Paid credits apply."
+    },
+    {
+      "id": "spline-mcp",
+      "name": "Spline MCP Server",
+      "kinds": [
+        "desktop-mcp",
+        "api"
+      ],
+      "state": "local-app-required",
+      "domains": [
+        "3d",
+        "ui",
+        "agent-platform"
+      ],
+      "capabilities": [
+        "create-scene",
+        "edit-scene",
+        "generate-3d",
+        "generate-image",
+        "layout",
+        "scene-code-api",
+        "realtime-api"
+      ],
+      "notes": "Official MCP runs through open Spline desktop app."
+    },
+    {
+      "id": "raylight-mcp",
+      "name": "Raylight MCP",
+      "kinds": [
+        "mcp"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "video",
+        "motion",
+        "agent-platform"
+      ],
+      "endpoint": "https://api.raylight.app/mcp",
+      "auth": "OAuth through MCP client; keep Raylight project open.",
+      "capabilities": [
+        "project-list",
+        "shot-read",
+        "shot-edit",
+        "animation-edit",
+        "render-frames",
+        "visual-review"
+      ],
+      "notes": "Official remote MCP."
+    },
+    {
+      "id": "manus-api",
+      "name": "Manus API v2",
+      "kinds": [
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "agent-platform",
+        "video",
+        "ui"
+      ],
+      "endpoint": "https://api.manus.ai",
+      "install": "npx skills add https://open.manus.ai/docs --skill manus-api --agent codex --global --yes",
+      "env": [
+        "MANUS_API_KEY"
+      ],
+      "capabilities": [
+        "task-create",
+        "task-followup",
+        "task-results",
+        "projects",
+        "files",
+        "webhooks",
+        "skills",
+        "agents",
+        "connectors",
+        "website-publish"
+      ],
+      "notes": "Use API v2 and official skill."
+    },
+    {
+      "id": "manus-custom-mcp",
+      "name": "Manus Custom MCP",
+      "kinds": [
+        "mcp"
+      ],
+      "state": "ready",
+      "domains": [
+        "agent-platform"
+      ],
+      "capabilities": [
+        "custom-tools",
+        "resources",
+        "prompts",
+        "api-bridging",
+        "workflow-actions"
+      ],
+      "notes": "Game Shop can itself be connected into Manus."
+    },
+    {
+      "id": "rive-web",
+      "name": "Rive Web Runtime",
+      "kinds": [
+        "library",
+        "api"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion",
+        "3d",
+        "website",
+        "web-app",
+        "mobile-app",
+        "game"
+      ],
+      "install": "npm install @rive-app/webgl2",
+      "capabilities": [
+        "interactive-animation",
+        "state-machines",
+        "runtime-interactivity",
+        "webgl2",
+        "rive-files",
+        "wasm-runtime"
+      ],
+      "notes": "Official JavaScript/WASM runtime; Rive artifacts are first-class Game Shop artifact candidates."
+    },
+    {
+      "id": "ludo-ai",
+      "name": "Ludo AI",
+      "kinds": [
+        "mcp",
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "motion",
+        "3d",
+        "video",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.ludo.ai/mcp",
+      "env": [
+        "LUDO_API_KEY"
+      ],
+      "auth": "Remote HTTP MCP: Authentication: ApiKey <key>; REST base https://api.ludo.ai/api/.",
+      "capabilities": [
+        "image-generation",
+        "sprites",
+        "spritesheets",
+        "background-removal",
+        "3d-glb",
+        "rigging",
+        "animation",
+        "music",
+        "sound-effects",
+        "voice",
+        "voice-cloning",
+        "video",
+        "generation-history",
+        "job-status",
+        "job-cancel",
+        "docs"
+      ],
+      "notes": "Async multimodal generation; request_id supports safe retries."
+    },
+    {
+      "id": "meshy",
+      "name": "Meshy",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "3d",
+        "agent-platform"
+      ],
+      "endpoint": "https://api.meshy.ai",
+      "env": [
+        "MESHY_API_KEY"
+      ],
+      "auth": "Bearer API key.",
+      "capabilities": [
+        "text-to-3d",
+        "image-to-3d",
+        "texturing",
+        "task-status",
+        "asset-download"
+      ],
+      "notes": "Official MCP and REST API."
+    },
+    {
+      "id": "fal-ai",
+      "name": "fal",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "motion",
+        "3d",
+        "video",
+        "audio",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.fal.ai/mcp",
+      "env": [
+        "FAL_KEY"
+      ],
+      "capabilities": [
+        "model-search",
+        "schema-inspection",
+        "inference",
+        "file-upload",
+        "image",
+        "video",
+        "audio",
+        "3d",
+        "queue",
+        "webhooks"
+      ],
+      "notes": "Hosted MCP plus durable queue API."
+    },
+    {
+      "id": "replicate",
+      "name": "Replicate",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "motion",
+        "3d",
+        "video",
+        "audio",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.replicate.com",
+      "env": [
+        "REPLICATE_API_TOKEN"
+      ],
+      "capabilities": [
+        "model-search",
+        "predictions",
+        "image",
+        "video",
+        "audio",
+        "3d",
+        "upscaling"
+      ],
+      "notes": "Official MCP mirrors HTTP API."
+    },
+    {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "kinds": [
+        "mcp",
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "audio",
+        "video",
+        "agent-platform",
+        "website",
+        "web-app",
+        "mobile-app",
+        "game"
+      ],
+      "endpoint": "https://api.elevenlabs.io/v1/mcp",
+      "env": [
+        "ELEVENLABS_API_KEY"
+      ],
+      "capabilities": [
+        "speech",
+        "voices",
+        "sound-effects",
+        "music",
+        "image-generation",
+        "video-generation",
+        "agents"
+      ],
+      "notes": "Hosted MCP and media APIs."
+    },
+    {
+      "id": "scenario",
+      "name": "Scenario",
+      "kinds": [
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "3d",
+        "video",
+        "audio",
+        "agent-platform"
+      ],
+      "env": [
+        "SCENARIO_API_KEY"
+      ],
+      "capabilities": [
+        "image-generation",
+        "video",
+        "3d",
+        "audio",
+        "textures",
+        "skyboxes",
+        "model-training",
+        "inpainting",
+        "outpainting",
+        "background-removal",
+        "upscaling",
+        "asset-management"
+      ],
+      "notes": "Verified REST/OpenAPI surface."
+    },
+    {
+      "id": "cloudinary",
+      "name": "Cloudinary",
+      "kinds": [
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "video",
+        "audio",
+        "website",
+        "web-app",
+        "mobile-app",
+        "agent-platform"
+      ],
+      "env": [
+        "CLOUDINARY_URL"
+      ],
+      "capabilities": [
+        "asset-upload",
+        "asset-management",
+        "image-transform",
+        "video-transform",
+        "optimization",
+        "delivery",
+        "analysis"
+      ],
+      "notes": "Artifact lifecycle and delivery layer."
+    },
+    {
+      "id": "motionsites-mcp",
+      "name": "MotionSites AI MCP",
+      "kinds": [
+        "mcp"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "design-reference",
+        "agent-platform"
+      ],
+      "endpoint": "https://xgdzyqfalbibzelpdpvr.supabase.co/functions/v1/mcp",
+      "capabilities": [
+        "website-design-prompts",
+        "design-reference",
+        "agent-design-guidance"
+      ],
+      "notes": "Official remote MCP."
+    },
+    {
+      "id": "unison-brain",
+      "name": "Unison Brain",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "agent-platform"
+      ],
+      "endpoint": "https://brain.unisonlabs.ai",
+      "install": "npx -y @unisonlabs/mcp",
+      "env": [
+        "UNISON_TOKEN"
+      ],
+      "capabilities": [
+        "project-memory",
+        "context-recall",
+        "ingest",
+        "search",
+        "facts",
+        "knowledge-graph",
+        "remember",
+        "write",
+        "edit",
+        "status"
+      ],
+      "notes": "Candidate cross-agent project memory."
+    },
+    {
+      "id": "contextcore",
+      "name": "ContextCore",
+      "kinds": [
+        "mcp",
+        "cli"
+      ],
+      "state": "local-app-required",
+      "domains": [
+        "agent-platform",
+        "project-memory",
+        "code-search",
+        "media-search"
+      ],
+      "install": "python -m pip install contextcore",
+      "capabilities": [
+        "local-file-index",
+        "hybrid-search",
+        "search",
+        "fetch-content",
+        "neighbors",
+        "codebase-context",
+        "image-index",
+        "audio-index",
+        "video-index"
+      ],
+      "notes": "Local-first AGPL MCP. Runs a local backend normally at http://127.0.0.1:8000 and a stdio MCP server; appropriate for desktop/local agents, not a Vercel-hosted remote integration."
+    },
+    {
+      "id": "wangp",
+      "name": "WanGP / Wan2GP",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli"
+      ],
+      "state": "local-app-required",
+      "domains": [
+        "video",
+        "agent-platform"
+      ],
+      "install": "python wgp.py --mcp --mcp-transport stdio",
+      "capabilities": [
+        "model-discovery",
+        "warm-session",
+        "generation",
+        "session-reuse",
+        "streamable-http"
+      ],
+      "notes": "Local MCP over stdio or Streamable HTTP."
+    },
+    {
+      "id": "shadergradient",
+      "name": "ShaderGradient",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "shader",
+        "3d",
+        "ui",
+        "motion"
+      ],
+      "install": "npm i @shadergradient/react @react-three/fiber three three-stdlib camera-controls",
+      "capabilities": [
+        "animated-gradients",
+        "react-renderer",
+        "threejs",
+        "webgl",
+        "shader-backgrounds"
+      ],
+      "notes": "MIT React renderer."
+    },
+    {
+      "id": "kokonutui",
+      "name": "KokonutUI",
+      "kinds": [
+        "mcp",
+        "registry",
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion"
+      ],
+      "install": "npx shadcn@latest mcp init --client codex",
+      "capabilities": [
+        "component-search",
+        "component-install",
+        "react-ui",
+        "motion-components"
+      ],
+      "notes": "Official @kokonutui shadcn-compatible registry exposed through the official shadcn MCP server."
+    },
+    {
+      "id": "bklit-ui",
+      "name": "Bklit UI",
+      "kinds": [
+        "registry",
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "data-viz",
+        "website",
+        "web-app"
+      ],
+      "install": "npx skills add bklit/bklit-ui",
+      "capabilities": [
+        "charts",
+        "data-visualization",
+        "project-aware-skill",
+        "shadcn-registry",
+        "animated-charts"
+      ],
+      "notes": "Current Bklit UI is an MIT chart/component registry at @bklit. Configure https://ui.bklit.com/r/{name}.json and consume it through shadcn CLI/MCP; the old Bklit Analytics product is not the integration target."
+    },
+    {
+      "id": "cult-ui",
+      "name": "Cult UI",
+      "kinds": [
+        "mcp",
+        "registry",
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion"
+      ],
+      "install": "npx shadcn@latest mcp init --client codex",
+      "capabilities": [
+        "component-search",
+        "component-install",
+        "registry-browse",
+        "motion-ui"
+      ],
+      "notes": "Do not mirror Pro content."
+    },
+    {
+      "id": "animate-ui",
+      "name": "Animate UI",
+      "kinds": [
+        "mcp",
+        "registry",
+        "cli"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion"
+      ],
+      "install": "npx shadcn@latest mcp init --client codex",
+      "capabilities": [
+        "animated-components",
+        "component-search",
+        "component-install",
+        "motion-ui"
+      ],
+      "notes": "Standard shadcn MCP workflow."
+    },
+    {
+      "id": "preline-ui",
+      "name": "Preline UI MCP",
+      "kinds": [
+        "mcp",
+        "cli",
+        "registry"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.preline.co",
+      "install": "npx skills add htmlstreamofficial/preline",
+      "env": [
+        "PRELINE_API_KEY"
+      ],
+      "capabilities": [
+        "components-list",
+        "component-source",
+        "blocks",
+        "component-docs",
+        "themes"
+      ],
+      "notes": "Hosted Streamable HTTP MCP."
+    },
+    {
+      "id": "daisyui-mcp",
+      "name": "daisyUI Blueprint MCP",
+      "kinds": [
+        "mcp",
+        "library"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "agent-platform"
+      ],
+      "install": "npx -y daisyui-blueprint@latest",
+      "env": [
+        "DAISYUI_BLUEPRINT_LICENSE",
+        "DAISYUI_BLUEPRINT_EMAIL"
+      ],
+      "auth": "Official Blueprint MCP requires license and email; Figma key is optional.",
+      "capabilities": [
+        "daisyui-code-generation",
+        "component-guidance",
+        "theme-guidance",
+        "figma-to-code"
+      ],
+      "notes": "Official daisyUI Blueprint is the recommended MCP; Context7 and GitMCP are optional third-party alternatives."
+    },
+    {
+      "id": "shadcn-mcp",
+      "name": "shadcn MCP",
+      "kinds": [
+        "mcp",
+        "cli",
+        "registry"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "website",
+        "web-app",
+        "agent-platform"
+      ],
+      "install": "npx shadcn@latest mcp",
+      "capabilities": [
+        "registry-browse",
+        "registry-search",
+        "component-install",
+        "multi-registry",
+        "private-registry"
+      ],
+      "notes": "Official MCP server bridges AI clients to any shadcn-compatible registry configured in components.json."
+    },
+    {
+      "id": "originkit-mcp",
+      "name": "OriginKit MCP",
+      "kinds": [
+        "mcp",
+        "api",
+        "cli",
+        "registry"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app",
+        "agent-platform"
+      ],
+      "endpoint": "https://mcp.originkit.dev/mcp",
+      "install": "npx @originkit/cli",
+      "env": [
+        "ORIGINKIT_API_KEY"
+      ],
+      "auth": "Bearer API key for code editors; OAuth/sign-in supported by compatible chat clients.",
+      "capabilities": [
+        "list-components",
+        "get-component",
+        "search",
+        "fetch",
+        "stack-adaptation",
+        "registry-api"
+      ],
+      "notes": "Official hosted MCP plus registry API at https://mcp.originkit.dev/v1. Delivers curated source; it does not generate arbitrary components."
+    },
+    {
+      "id": "shaders-mcp",
+      "name": "Shaders MCP",
+      "kinds": [
+        "mcp",
+        "api",
+        "library",
+        "registry"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "shader",
+        "ui",
+        "motion",
+        "3d",
+        "website",
+        "web-app",
+        "agent-platform"
+      ],
+      "endpoint": "https://shaders.com/mcp",
+      "install": "npm install shaders",
+      "env": [
+        "SHADERS_API_KEY"
+      ],
+      "auth": "Bearer API key or OAuth in supported connector clients.",
+      "capabilities": [
+        "shader-install",
+        "shader-edit",
+        "preset-access",
+        "webgpu-effects",
+        "javascript-api",
+        "shadcn-registry"
+      ],
+      "notes": "Official Shaders MCP plus JavaScript package and shadcn registry. The same API key can authorize MCP and registry access."
+    },
+    {
+      "id": "logoai-api",
+      "name": "LogoAI Logo API",
+      "kinds": [
+        "api"
+      ],
+      "state": "needs-auth",
+      "domains": [
+        "ui",
+        "brand",
+        "website",
+        "web-app",
+        "agent-platform"
+      ],
+      "endpoint": "https://legacy.logoai.com/logo-api",
+      "capabilities": [
+        "logo-generation",
+        "logo-customization",
+        "brand-assets",
+        "iframe-integration",
+        "logo-api-lite"
+      ],
+      "notes": "Official commercial integration exists, but access is partner-approved rather than self-serve API-key provisioning. Do not mark ready until account approval and implementation docs are supplied."
+    },
+    {
+      "id": "headless-ui",
+      "name": "Headless UI",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "website",
+        "web-app"
+      ],
+      "install": "npm install @headlessui/react",
+      "capabilities": [
+        "accessible-primitives",
+        "dialog",
+        "menu",
+        "combobox",
+        "listbox",
+        "popover",
+        "tabs",
+        "transitions"
+      ],
+      "notes": "Official unstyled accessible component library for React; Vue package is also available."
+    },
+    {
+      "id": "webgpu",
+      "name": "WebGPU",
+      "kinds": [
+        "platform-api"
+      ],
+      "state": "ready",
+      "domains": [
+        "3d",
+        "shader",
+        "game",
+        "interactive-experience"
+      ],
+      "capabilities": [
+        "gpu-rendering",
+        "compute",
+        "shader-pipelines",
+        "high-performance-graphics"
+      ],
+      "notes": "Browser platform API rather than a remote service. Route through feature detection and WebGL fallback where needed."
+    },
+    {
+      "id": "liquid-glass-js",
+      "name": "dashersw/liquid-glass-js",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "shader",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "webgl-glass",
+        "refraction",
+        "blur",
+        "masking"
+      ],
+      "notes": "MIT vanilla JavaScript/WebGL library. Repository currently has no formal npm release; consume source deliberately instead of inventing a package install command."
+    },
+    {
+      "id": "motion-primitives",
+      "name": "Motion Primitives",
+      "kinds": [
+        "library",
+        "reference"
+      ],
+      "state": "installable",
+      "domains": [
+        "ui",
+        "motion",
+        "website",
+        "web-app"
+      ],
+      "capabilities": [
+        "motion-components",
+        "react-ui",
+        "templates",
+        "sections"
+      ],
+      "notes": "Use core/open components directly; Motion Primitives Pro is licensed source and must not be mirrored or redistributed through Game Shop."
+    },
+    {
+      "id": "animejs",
+      "name": "Anime.js",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "motion",
+        "ui"
+      ],
+      "install": "npm install animejs",
+      "capabilities": [
+        "timeline",
+        "dom-animation",
+        "svg-animation",
+        "js-object-animation",
+        "stagger",
+        "drag",
+        "scroll"
+      ],
+      "notes": "Local runtime."
+    },
+    {
+      "id": "threejs",
+      "name": "Three.js",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "3d",
+        "shader"
+      ],
+      "install": "npm install three",
+      "capabilities": [
+        "webgl",
+        "webgpu",
+        "scene",
+        "gltf",
+        "shader",
+        "postprocessing"
+      ],
+      "notes": "Local runtime."
+    },
+    {
+      "id": "lenis",
+      "name": "Lenis",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "motion",
+        "ui",
+        "3d"
+      ],
+      "install": "npm install lenis",
+      "capabilities": [
+        "smooth-scroll",
+        "scroll-sync",
+        "webgl-scroll"
+      ],
+      "notes": "Local runtime."
+    },
+    {
+      "id": "gsap",
+      "name": "GSAP",
+      "kinds": [
+        "library"
+      ],
+      "state": "installable",
+      "domains": [
+        "motion",
+        "ui"
+      ],
+      "install": "npm install gsap",
+      "capabilities": [
+        "timeline",
+        "scroll",
+        "svg",
+        "cinematic-motion"
+      ],
+      "notes": "Respect current licensing."
+    },
+    {
+      "id": "spline-code-api",
+      "name": "Spline Code API",
+      "kinds": [
+        "api"
+      ],
+      "state": "ready",
+      "domains": [
+        "3d",
+        "ui"
+      ],
+      "capabilities": [
+        "scene-variables",
+        "object-properties",
+        "events",
+        "transitions",
+        "runtime-interactivity"
+      ],
+      "notes": "Controls exported Spline scenes."
+    },
+    {
+      "id": "jitter",
+      "name": "Jitter",
+      "kinds": [
+        "reference"
+      ],
+      "state": "research",
+      "domains": [
+        "video",
+        "motion"
+      ],
+      "capabilities": [
+        "motion-design",
+        "timeline-animation",
+        "ai-animation",
+        "bulk-create",
+        "video-export"
+      ],
+      "notes": "No public developer API/MCP contract verified yet."
+    }
+  ],
+  "legacyGameArtProviders": [
+    {
+      "name": "spriteship",
+      "purpose": "Primary game-art and animation pipeline",
+      "configured": false,
+      "integration": "planned",
+      "adapterImplemented": false,
+      "toolExposed": false,
+      "paidCalls": "blocked-by-default"
+    },
+    {
+      "name": "autosprite",
+      "purpose": "Character generation and Phaser-ready sprite sheets",
+      "configured": false,
+      "integration": "rest",
+      "adapterImplemented": true,
+      "toolExposed": true,
+      "paidCalls": "blocked-by-default"
+    },
+    {
+      "name": "sprite-ai",
+      "purpose": "2D and pixel-art sprite generation, animation, restyling and maps",
+      "configured": false,
+      "integration": "planned",
+      "adapterImplemented": false,
+      "toolExposed": false,
+      "paidCalls": "blocked-by-default"
+    },
+    {
+      "name": "spritesheet-ai",
+      "purpose": "Aligned multi-animation spritesheets and engine-ready exports",
+      "configured": false,
+      "integration": "planned",
+      "adapterImplemented": false,
+      "toolExposed": false,
+      "paidCalls": "planned"
+    },
+    {
+      "name": "spritecook",
+      "purpose": "Game art, characters, animation, tilesets, UI, textures and background removal",
+      "configured": false,
+      "integration": "rest",
+      "adapterImplemented": true,
+      "toolExposed": true,
+      "paidCalls": "blocked-by-default"
+    },
+    {
+      "name": "aimlapi",
+      "purpose": "General AI model gateway for image, video, audio, and text models",
+      "configured": false,
+      "integration": "planned",
+      "adapterImplemented": false,
+      "toolExposed": false,
+      "paidCalls": "blocked-by-default"
+    },
+    {
+      "name": "deepseek",
+      "purpose": "Coding and reasoning provider",
+      "configured": false,
+      "integration": "planned",
+      "adapterImplemented": false,
+      "toolExposed": false,
+      "paidCalls": "blocked-by-default"
+    }
+  ],
+  "externalEngineStatus": {
+    "meshy": {
+      "configured": false,
+      "mode": "rest",
+      "paid": true,
+      "artifactCapture": true,
+      "artifactFinalization": true,
+      "autoOrchestration": true
+    },
+    "fal": {
+      "configured": false,
+      "mode": "queue-api",
+      "paid": true,
+      "artifactCapture": true,
+      "artifactFinalization": true,
+      "autoOrchestration": true
+    },
+    "replicate": {
+      "configured": false,
+      "mode": "rest+mcp",
+      "paid": true,
+      "artifactCapture": true,
+      "artifactFinalization": true,
+      "autoOrchestration": true
+    },
+    "ludo": {
+      "configured": false,
+      "mode": "remote-mcp",
+      "paid": true,
+      "artifactCapture": true,
+      "artifactFinalization": true,
+      "autoOrchestration": true
+    },
+    "elevenlabs": {
+      "configured": false,
+      "mode": "async-flows+api",
+      "paid": true,
+      "artifactCapture": true,
+      "artifactFinalization": true,
+      "autoOrchestration": true
+    },
+    "scenario": {
+      "configured": false,
+      "mode": "universal-rest",
+      "paid": true,
+      "artifactCapture": true
     }
   },
-  "knownBlockers": {
-    "replicate": "read-only authentication verification currently deferred/failing; do not auto-route paid work until re-verified",
-    "kibo-ui": "official MCP POST handshake returned provider HTTP 500",
-    "contextcore": "local runtime; verify stdio wrapper per machine",
-    "spline-mcp": "desktop application required",
-    "wangp": "heavy local runtime intentionally opt-in",
-    "scenario": "requires API key + secret on compatible plan"
+  "sdk": {
+    "providers": [
+      {
+        "id": "replicate",
+        "packageName": "replicate",
+        "version": "^1.4.0",
+        "install": "npm install replicate",
+        "configured": false,
+        "requiredEnv": [
+          "REPLICATE_API_TOKEN"
+        ],
+        "apiBase": "https://api.replicate.com/v1",
+        "authScheme": "API token; official SDK uses auth option and HTTP API uses bearer/token authentication depending on client surface.",
+        "capabilities": [
+          "model-inference",
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling"
+        ],
+        "generationProvider": true,
+        "notes": "Official Replicate JavaScript client. Installed even while account-token verification is deferred so routing metadata remains portable."
+      },
+      {
+        "id": "fal",
+        "packageName": "@fal-ai/client",
+        "version": "^1.10.1",
+        "install": "npm install @fal-ai/client",
+        "configured": false,
+        "requiredEnv": [
+          "FAL_KEY"
+        ],
+        "apiBase": "https://queue.fal.run",
+        "authScheme": "FAL_KEY; queue REST uses Authorization: Key <credential>; official SDK supports fal.config({ credentials }).",
+        "capabilities": [
+          "model-inference",
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling"
+        ],
+        "generationProvider": true,
+        "notes": "Official fal JavaScript client with queue, subscribe, upload and inference helpers."
+      },
+      {
+        "id": "elevenlabs",
+        "packageName": "@elevenlabs/elevenlabs-js",
+        "version": "^2.68.0",
+        "install": "npm install @elevenlabs/elevenlabs-js",
+        "configured": false,
+        "requiredEnv": [
+          "ELEVENLABS_API_KEY"
+        ],
+        "apiBase": "https://api.elevenlabs.io/v1",
+        "authScheme": "xi-api-key header or ElevenLabsClient({ apiKey }). Server-side only.",
+        "capabilities": [
+          "speech-generation",
+          "audio-generation",
+          "image-generation",
+          "video-generation"
+        ],
+        "generationProvider": true,
+        "notes": "Official ElevenLabs Node SDK. Keep API keys server-side; browser/client SDKs require separate scoped-token patterns."
+      },
+      {
+        "id": "scenario",
+        "packageName": "@scenario-labs/sdk",
+        "version": "^3.1.0",
+        "install": "npm install @scenario-labs/sdk",
+        "configured": false,
+        "requiredEnv": [
+          "SCENARIO_API_KEY",
+          "SCENARIO_API_SECRET"
+        ],
+        "apiBase": "https://api.cloud.scenario.com/v1",
+        "authScheme": "Scenario API key + API secret through the official server-side SDK.",
+        "capabilities": [
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling",
+          "asset-management"
+        ],
+        "generationProvider": true,
+        "notes": "Official Scenario TypeScript SDK. API access remains deferred until both key and secret are configured on a compatible plan."
+      },
+      {
+        "id": "cloudinary",
+        "packageName": "cloudinary",
+        "version": "^2.11.0",
+        "install": "npm install cloudinary",
+        "configured": false,
+        "requiredEnv": [
+          "CLOUDINARY_URL"
+        ],
+        "apiBase": "https://api.cloudinary.com",
+        "authScheme": "CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>; credentials must remain server-side.",
+        "capabilities": [
+          "asset-upload",
+          "asset-management",
+          "image-transform",
+          "video-transform",
+          "media-delivery"
+        ],
+        "generationProvider": false,
+        "notes": "Official Cloudinary Node SDK for artifact upload, transformation, optimization and delivery."
+      }
+    ],
+    "routingPriority": {
+      "model-inference": [
+        "fal",
+        "replicate"
+      ],
+      "image-generation": [
+        "fal",
+        "scenario",
+        "replicate",
+        "elevenlabs"
+      ],
+      "video-generation": [
+        "fal",
+        "scenario",
+        "replicate",
+        "elevenlabs"
+      ],
+      "audio-generation": [
+        "elevenlabs",
+        "fal",
+        "scenario",
+        "replicate"
+      ],
+      "speech-generation": [
+        "elevenlabs"
+      ],
+      "3d-generation": [
+        "scenario",
+        "fal",
+        "replicate"
+      ],
+      "upscaling": [
+        "replicate",
+        "fal",
+        "scenario"
+      ],
+      "asset-upload": [
+        "cloudinary"
+      ],
+      "asset-management": [
+        "cloudinary",
+        "scenario"
+      ],
+      "image-transform": [
+        "cloudinary"
+      ],
+      "video-transform": [
+        "cloudinary"
+      ],
+      "media-delivery": [
+        "cloudinary"
+      ]
+    }
   },
-  "safety": {
-    "paidGenerationDefault": "blocked",
-    "enablePaidGeneration": "GAME_SHOP_ALLOW_PAID_GENERATION=true",
-    "automaticPostSubmitFallback": false,
-    "secretsCommitted": false
+  "adapters": [
+    {
+      "id": "fal",
+      "mode": "sdk+rest",
+      "generation": true,
+      "capabilities": [
+        "model-inference",
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "3d-generation",
+        "upscaling"
+      ],
+      "operations": [
+        "submit"
+      ],
+      "pollOperations": [
+        "job"
+      ],
+      "fallbackSafeBeforeSubmitOnly": true,
+      "notes": "Generation submits through the established queue REST contract behind a unified adapter; SDK remains available for richer direct use."
+    },
+    {
+      "id": "replicate",
+      "mode": "sdk+rest",
+      "generation": true,
+      "capabilities": [
+        "model-inference",
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "3d-generation",
+        "upscaling"
+      ],
+      "operations": [
+        "predict"
+      ],
+      "pollOperations": [
+        "prediction"
+      ],
+      "fallbackSafeBeforeSubmitOnly": true,
+      "notes": "Async prediction REST path is preserved behind the adapter while the official SDK is installed. Auth remains deferred until verified."
+    },
+    {
+      "id": "elevenlabs",
+      "mode": "sdk+rest",
+      "generation": true,
+      "capabilities": [
+        "speech-generation",
+        "audio-generation",
+        "sound-effects",
+        "music"
+      ],
+      "operations": [
+        "speech"
+      ],
+      "pollOperations": [
+        "speech-job"
+      ],
+      "fallbackSafeBeforeSubmitOnly": true,
+      "notes": "Speech flow uses the existing async provider contract; official SDK is installed for future direct expansion."
+    },
+    {
+      "id": "scenario",
+      "mode": "sdk+rest",
+      "generation": true,
+      "capabilities": [
+        "image-generation",
+        "video-generation",
+        "audio-generation",
+        "3d-generation",
+        "upscaling",
+        "asset-management"
+      ],
+      "operations": [
+        "generate"
+      ],
+      "pollOperations": [],
+      "fallbackSafeBeforeSubmitOnly": true,
+      "notes": "Scenario SDK is installed; adapter keeps the verified universal REST generation path until API credentials are enabled."
+    },
+    {
+      "id": "cloudinary",
+      "mode": "sdk",
+      "generation": false,
+      "capabilities": [
+        "asset-upload",
+        "asset-management",
+        "image-transform",
+        "video-transform",
+        "media-delivery"
+      ],
+      "operations": [
+        "upload"
+      ],
+      "pollOperations": [],
+      "fallbackSafeBeforeSubmitOnly": true,
+      "notes": "Official Cloudinary Node SDK handles artifact upload and delivery. Upload is a mutation but is not a model-generation action."
+    }
+  ],
+  "health": {
+    "total": 51,
+    "readyOrConfigured": 26,
+    "deferred": 3,
+    "vendorBlocked": 1,
+    "localRuntime": 4,
+    "authNeeded": 16,
+    "rows": [
+      {
+        "id": "magic-ui",
+        "name": "Magic UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "component-list",
+          "component-search",
+          "component-source",
+          "templates",
+          "animated-ui"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "kibo-ui",
+        "name": "Kibo UI",
+        "state": "vendor-blocked",
+        "score": 0,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "component-docs",
+          "component-install",
+          "shadcn-components",
+          "product-ui",
+          "data-ui"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": {
+          "code": "kibo-provider-http-500",
+          "state": "vendor-blocked",
+          "detail": "Official MCP Streamable HTTP POST handshake returned provider HTTP 500. No local workaround is trusted.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "heroui",
+        "name": "HeroUI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "library"
+        ],
+        "domains": [
+          "ui",
+          "website",
+          "web-app",
+          "mobile-app"
+        ],
+        "capabilities": [
+          "react-components",
+          "react-native-components",
+          "component-docs",
+          "project-init",
+          "install",
+          "upgrade",
+          "doctor",
+          "agent-docs"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "impeccable",
+        "name": "Impeccable",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "design-reference",
+          "website",
+          "web-app",
+          "mobile-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "design-context",
+          "audit",
+          "critique",
+          "polish",
+          "live-iteration",
+          "detector",
+          "design-hooks",
+          "design-system-drift",
+          "ui-verification"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "podium",
+        "name": "Podium",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "api"
+        ],
+        "domains": [
+          "commerce",
+          "website",
+          "web-app",
+          "mobile-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "products",
+          "creators",
+          "users",
+          "orders",
+          "payments",
+          "campaigns",
+          "rewards",
+          "companion",
+          "task-pool",
+          "search",
+          "webhooks",
+          "agentic-commerce"
+        ],
+        "endpoint": "https://api.podium.build/api/v1",
+        "auth": "Bearer token; live keys use podium_live_ prefix and test keys use podium_test_.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "skiper-ui",
+        "name": "Skiper UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "registry",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "animated-components",
+          "shadcn-registry",
+          "component-install"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "smoothui",
+        "name": "SmoothUI",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "reference",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "animated-react-components",
+          "ui-blocks",
+          "motion",
+          "gsap",
+          "shadcn-compatible"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "unlumen-ui",
+        "name": "Unlumen UI",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "reference",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "react-components",
+          "shadcn-components",
+          "motion-ui",
+          "design-reference"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "horizonx",
+        "name": "HorizonX",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "reference"
+        ],
+        "domains": [
+          "ui",
+          "design-reference",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "ui-kits",
+          "figma",
+          "coded-templates",
+          "design-systems",
+          "commercial-assets"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "vengeance-ui",
+        "name": "Vengeance UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "animated-components",
+          "component-install",
+          "shader-ui",
+          "interactive-ui"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "chatterbox-tts",
+        "name": "Chatterbox TTS",
+        "state": "local-runtime",
+        "score": 10,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library",
+          "cli"
+        ],
+        "domains": [
+          "audio",
+          "website",
+          "web-app",
+          "mobile-app",
+          "game",
+          "interactive-experience"
+        ],
+        "capabilities": [
+          "text-to-speech",
+          "voice-cloning",
+          "multilingual-speech",
+          "emotion-control",
+          "voice-conversion",
+          "watermarking"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "21st-dev",
+        "name": "21st.dev",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "component-search",
+          "component-install",
+          "ui-generation",
+          "themes",
+          "templates",
+          "publishing",
+          "mcp-app-ui"
+        ],
+        "endpoint": "https://21st.dev/api/mcp",
+        "auth": "API key for CLI/CI; hosted MCP can use interactive sign-in where supported.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "motion-ai-kit",
+        "name": "Motion AI Kit",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "library"
+        ],
+        "domains": [
+          "motion",
+          "ui",
+          "3d"
+        ],
+        "capabilities": [
+          "motion-docs",
+          "example-search",
+          "transition-editor",
+          "performance-audit",
+          "css-generation",
+          "threejs-motion"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "motion-so",
+        "name": "Mosaic Motion",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api"
+        ],
+        "domains": [
+          "video",
+          "motion",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "prompt-to-video",
+          "session-create",
+          "session-poll",
+          "followup",
+          "design-system",
+          "style-reference",
+          "attachments",
+          "source-audit"
+        ],
+        "endpoint": "https://mcp.motion.so/mcp",
+        "auth": "OAuth 2.1 is preferred for MCP; service-account or Bearer Motion API keys are supported. Game Shop uses MOTION_SO_API_KEY as its local env name.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "spline-mcp",
+        "name": "Spline MCP Server",
+        "state": "local-runtime",
+        "score": 10,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "desktop-mcp",
+          "api"
+        ],
+        "domains": [
+          "3d",
+          "ui",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "create-scene",
+          "edit-scene",
+          "generate-3d",
+          "generate-image",
+          "layout",
+          "scene-code-api",
+          "realtime-api"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": {
+          "code": "spline-desktop-required",
+          "state": "local-runtime",
+          "detail": "Spline MCP requires the desktop application to be installed and running.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "raylight-mcp",
+        "name": "Raylight MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp"
+        ],
+        "domains": [
+          "video",
+          "motion",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "project-list",
+          "shot-read",
+          "shot-edit",
+          "animation-edit",
+          "render-frames",
+          "visual-review"
+        ],
+        "endpoint": "https://api.raylight.app/mcp",
+        "auth": "OAuth through MCP client; keep Raylight project open.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "manus-api",
+        "name": "Manus API v2",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "agent-platform",
+          "video",
+          "ui"
+        ],
+        "capabilities": [
+          "task-create",
+          "task-followup",
+          "task-results",
+          "projects",
+          "files",
+          "webhooks",
+          "skills",
+          "agents",
+          "connectors",
+          "website-publish"
+        ],
+        "endpoint": "https://api.manus.ai",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "manus-custom-mcp",
+        "name": "Manus Custom MCP",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp"
+        ],
+        "domains": [
+          "agent-platform"
+        ],
+        "capabilities": [
+          "custom-tools",
+          "resources",
+          "prompts",
+          "api-bridging",
+          "workflow-actions"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "rive-web",
+        "name": "Rive Web Runtime",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library",
+          "api"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "3d",
+          "website",
+          "web-app",
+          "mobile-app",
+          "game"
+        ],
+        "capabilities": [
+          "interactive-animation",
+          "state-machines",
+          "runtime-interactivity",
+          "webgl2",
+          "rive-files",
+          "wasm-runtime"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "ludo-ai",
+        "name": "Ludo AI",
+        "state": "deferred",
+        "score": 40,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "3d",
+          "video",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "image-generation",
+          "sprites",
+          "spritesheets",
+          "background-removal",
+          "3d-glb",
+          "rigging",
+          "animation",
+          "music",
+          "sound-effects",
+          "voice",
+          "voice-cloning",
+          "video",
+          "generation-history",
+          "job-status",
+          "job-cancel",
+          "docs"
+        ],
+        "endpoint": "https://mcp.ludo.ai/mcp",
+        "auth": "Remote HTTP MCP: Authentication: ApiKey <key>; REST base https://api.ludo.ai/api/.",
+        "blocker": {
+          "code": "ludo-auth-deferred",
+          "state": "deferred",
+          "detail": "Ludo API/MCP access is plan-dependent and no key is currently required for the main build path.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "meshy",
+        "name": "Meshy",
+        "state": "auth-needed",
+        "score": 35,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "3d",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "text-to-3d",
+          "image-to-3d",
+          "texturing",
+          "task-status",
+          "asset-download"
+        ],
+        "endpoint": "https://api.meshy.ai",
+        "auth": "Bearer API key.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "fal-ai",
+        "name": "fal",
+        "state": "auth-needed",
+        "score": 35,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": {
+          "id": "fal",
+          "packageName": "@fal-ai/client",
+          "version": "^1.10.1",
+          "install": "npm install @fal-ai/client",
+          "env": [
+            "FAL_KEY"
+          ],
+          "apiBase": "https://queue.fal.run",
+          "authScheme": "FAL_KEY; queue REST uses Authorization: Key <credential>; official SDK supports fal.config({ credentials }).",
+          "capabilities": [
+            "model-inference",
+            "image-generation",
+            "video-generation",
+            "audio-generation",
+            "3d-generation",
+            "upscaling"
+          ],
+          "generationProvider": true,
+          "notes": "Official fal JavaScript client with queue, subscribe, upload and inference helpers."
+        },
+        "kinds": [
+          "mcp",
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "3d",
+          "video",
+          "audio",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "model-search",
+          "schema-inspection",
+          "inference",
+          "file-upload",
+          "image",
+          "video",
+          "audio",
+          "3d",
+          "queue",
+          "webhooks"
+        ],
+        "endpoint": "https://mcp.fal.ai/mcp",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": true
+      },
+      {
+        "id": "replicate",
+        "name": "Replicate",
+        "state": "deferred",
+        "score": 40,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": {
+          "id": "replicate",
+          "packageName": "replicate",
+          "version": "^1.4.0",
+          "install": "npm install replicate",
+          "env": [
+            "REPLICATE_API_TOKEN"
+          ],
+          "apiBase": "https://api.replicate.com/v1",
+          "authScheme": "API token; official SDK uses auth option and HTTP API uses bearer/token authentication depending on client surface.",
+          "capabilities": [
+            "model-inference",
+            "image-generation",
+            "video-generation",
+            "audio-generation",
+            "3d-generation",
+            "upscaling"
+          ],
+          "generationProvider": true,
+          "notes": "Official Replicate JavaScript client. Installed even while account-token verification is deferred so routing metadata remains portable."
+        },
+        "kinds": [
+          "mcp",
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "3d",
+          "video",
+          "audio",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "model-search",
+          "predictions",
+          "image",
+          "video",
+          "audio",
+          "3d",
+          "upscaling"
+        ],
+        "endpoint": "https://mcp.replicate.com",
+        "auth": null,
+        "blocker": {
+          "code": "replicate-auth-deferred",
+          "state": "deferred",
+          "detail": "Credential is present locally but read-only account verification has failed. Keep adapter installed but do not route paid work here until auth is re-verified.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": true
+      },
+      {
+        "id": "elevenlabs",
+        "name": "ElevenLabs",
+        "state": "auth-needed",
+        "score": 35,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": {
+          "id": "elevenlabs",
+          "packageName": "@elevenlabs/elevenlabs-js",
+          "version": "^2.68.0",
+          "install": "npm install @elevenlabs/elevenlabs-js",
+          "env": [
+            "ELEVENLABS_API_KEY"
+          ],
+          "apiBase": "https://api.elevenlabs.io/v1",
+          "authScheme": "xi-api-key header or ElevenLabsClient({ apiKey }). Server-side only.",
+          "capabilities": [
+            "speech-generation",
+            "audio-generation",
+            "image-generation",
+            "video-generation"
+          ],
+          "generationProvider": true,
+          "notes": "Official ElevenLabs Node SDK. Keep API keys server-side; browser/client SDKs require separate scoped-token patterns."
+        },
+        "kinds": [
+          "mcp",
+          "api"
+        ],
+        "domains": [
+          "audio",
+          "video",
+          "agent-platform",
+          "website",
+          "web-app",
+          "mobile-app",
+          "game"
+        ],
+        "capabilities": [
+          "speech",
+          "voices",
+          "sound-effects",
+          "music",
+          "image-generation",
+          "video-generation",
+          "agents"
+        ],
+        "endpoint": "https://api.elevenlabs.io/v1/mcp",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": true
+      },
+      {
+        "id": "scenario",
+        "name": "Scenario",
+        "state": "deferred",
+        "score": 40,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": {
+          "id": "scenario",
+          "packageName": "@scenario-labs/sdk",
+          "version": "^3.1.0",
+          "install": "npm install @scenario-labs/sdk",
+          "env": [
+            "SCENARIO_API_KEY",
+            "SCENARIO_API_SECRET"
+          ],
+          "apiBase": "https://api.cloud.scenario.com/v1",
+          "authScheme": "Scenario API key + API secret through the official server-side SDK.",
+          "capabilities": [
+            "image-generation",
+            "video-generation",
+            "audio-generation",
+            "3d-generation",
+            "upscaling",
+            "asset-management"
+          ],
+          "generationProvider": true,
+          "notes": "Official Scenario TypeScript SDK. API access remains deferred until both key and secret are configured on a compatible plan."
+        },
+        "kinds": [
+          "api"
+        ],
+        "domains": [
+          "ui",
+          "3d",
+          "video",
+          "audio",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "image-generation",
+          "video",
+          "3d",
+          "audio",
+          "textures",
+          "skyboxes",
+          "model-training",
+          "inpainting",
+          "outpainting",
+          "background-removal",
+          "upscaling",
+          "asset-management"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": {
+          "code": "scenario-auth-deferred",
+          "state": "deferred",
+          "detail": "SDK is installed; API use requires both SCENARIO_API_KEY and SCENARIO_API_SECRET and a compatible Scenario plan.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": true
+      },
+      {
+        "id": "cloudinary",
+        "name": "Cloudinary",
+        "state": "auth-needed",
+        "score": 35,
+        "configured": false,
+        "adapterReady": true,
+        "sdk": {
+          "id": "cloudinary",
+          "packageName": "cloudinary",
+          "version": "^2.11.0",
+          "install": "npm install cloudinary",
+          "env": [
+            "CLOUDINARY_URL"
+          ],
+          "apiBase": "https://api.cloudinary.com",
+          "authScheme": "CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>; credentials must remain server-side.",
+          "capabilities": [
+            "asset-upload",
+            "asset-management",
+            "image-transform",
+            "video-transform",
+            "media-delivery"
+          ],
+          "generationProvider": false,
+          "notes": "Official Cloudinary Node SDK for artifact upload, transformation, optimization and delivery."
+        },
+        "kinds": [
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "video",
+          "audio",
+          "website",
+          "web-app",
+          "mobile-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "asset-upload",
+          "asset-management",
+          "image-transform",
+          "video-transform",
+          "optimization",
+          "delivery",
+          "analysis"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": true
+      },
+      {
+        "id": "motionsites-mcp",
+        "name": "MotionSites AI MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp"
+        ],
+        "domains": [
+          "ui",
+          "design-reference",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "website-design-prompts",
+          "design-reference",
+          "agent-design-guidance"
+        ],
+        "endpoint": "https://xgdzyqfalbibzelpdpvr.supabase.co/functions/v1/mcp",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "unison-brain",
+        "name": "Unison Brain",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "agent-platform"
+        ],
+        "capabilities": [
+          "project-memory",
+          "context-recall",
+          "ingest",
+          "search",
+          "facts",
+          "knowledge-graph",
+          "remember",
+          "write",
+          "edit",
+          "status"
+        ],
+        "endpoint": "https://brain.unisonlabs.ai",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "contextcore",
+        "name": "ContextCore",
+        "state": "local-runtime",
+        "score": 10,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli"
+        ],
+        "domains": [
+          "agent-platform",
+          "project-memory",
+          "code-search",
+          "media-search"
+        ],
+        "capabilities": [
+          "local-file-index",
+          "hybrid-search",
+          "search",
+          "fetch-content",
+          "neighbors",
+          "codebase-context",
+          "image-index",
+          "audio-index",
+          "video-index"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": {
+          "code": "contextcore-local-runtime",
+          "state": "local-runtime",
+          "detail": "Local backend is separate from hosted Game Shop. MCP v1 compatibility repair was applied; each machine must verify its local stdio wrapper.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "wangp",
+        "name": "WanGP / Wan2GP",
+        "state": "local-runtime",
+        "score": 10,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api",
+          "cli"
+        ],
+        "domains": [
+          "video",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "model-discovery",
+          "warm-session",
+          "generation",
+          "session-reuse",
+          "streamable-http"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": {
+          "code": "wangp-local-model-runtime",
+          "state": "local-runtime",
+          "detail": "WanGP/Wan2GP is a heavy local model runtime and remains intentionally opt-in.",
+          "retryable": true
+        },
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "shadergradient",
+        "name": "ShaderGradient",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "shader",
+          "3d",
+          "ui",
+          "motion"
+        ],
+        "capabilities": [
+          "animated-gradients",
+          "react-renderer",
+          "threejs",
+          "webgl",
+          "shader-backgrounds"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "kokonutui",
+        "name": "KokonutUI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "registry",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion"
+        ],
+        "capabilities": [
+          "component-search",
+          "component-install",
+          "react-ui",
+          "motion-components"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "bklit-ui",
+        "name": "Bklit UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "registry",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "data-viz",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "charts",
+          "data-visualization",
+          "project-aware-skill",
+          "shadcn-registry",
+          "animated-charts"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "cult-ui",
+        "name": "Cult UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "registry",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion"
+        ],
+        "capabilities": [
+          "component-search",
+          "component-install",
+          "registry-browse",
+          "motion-ui"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "animate-ui",
+        "name": "Animate UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "registry",
+          "cli"
+        ],
+        "domains": [
+          "ui",
+          "motion"
+        ],
+        "capabilities": [
+          "animated-components",
+          "component-search",
+          "component-install",
+          "motion-ui"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "preline-ui",
+        "name": "Preline UI MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "components-list",
+          "component-source",
+          "blocks",
+          "component-docs",
+          "themes"
+        ],
+        "endpoint": "https://mcp.preline.co",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "daisyui-mcp",
+        "name": "daisyUI Blueprint MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "library"
+        ],
+        "domains": [
+          "ui",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "daisyui-code-generation",
+          "component-guidance",
+          "theme-guidance",
+          "figma-to-code"
+        ],
+        "endpoint": null,
+        "auth": "Official Blueprint MCP requires license and email; Figma key is optional.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "shadcn-mcp",
+        "name": "shadcn MCP",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "website",
+          "web-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "registry-browse",
+          "registry-search",
+          "component-install",
+          "multi-registry",
+          "private-registry"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "originkit-mcp",
+        "name": "OriginKit MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api",
+          "cli",
+          "registry"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "list-components",
+          "get-component",
+          "search",
+          "fetch",
+          "stack-adaptation",
+          "registry-api"
+        ],
+        "endpoint": "https://mcp.originkit.dev/mcp",
+        "auth": "Bearer API key for code editors; OAuth/sign-in supported by compatible chat clients.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "shaders-mcp",
+        "name": "Shaders MCP",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "mcp",
+          "api",
+          "library",
+          "registry"
+        ],
+        "domains": [
+          "shader",
+          "ui",
+          "motion",
+          "3d",
+          "website",
+          "web-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "shader-install",
+          "shader-edit",
+          "preset-access",
+          "webgpu-effects",
+          "javascript-api",
+          "shadcn-registry"
+        ],
+        "endpoint": "https://shaders.com/mcp",
+        "auth": "Bearer API key or OAuth in supported connector clients.",
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "logoai-api",
+        "name": "LogoAI Logo API",
+        "state": "auth-needed",
+        "score": 15,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "api"
+        ],
+        "domains": [
+          "ui",
+          "brand",
+          "website",
+          "web-app",
+          "agent-platform"
+        ],
+        "capabilities": [
+          "logo-generation",
+          "logo-customization",
+          "brand-assets",
+          "iframe-integration",
+          "logo-api-lite"
+        ],
+        "endpoint": "https://legacy.logoai.com/logo-api",
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "headless-ui",
+        "name": "Headless UI",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "ui",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "accessible-primitives",
+          "dialog",
+          "menu",
+          "combobox",
+          "listbox",
+          "popover",
+          "tabs",
+          "transitions"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "webgpu",
+        "name": "WebGPU",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "platform-api"
+        ],
+        "domains": [
+          "3d",
+          "shader",
+          "game",
+          "interactive-experience"
+        ],
+        "capabilities": [
+          "gpu-rendering",
+          "compute",
+          "shader-pipelines",
+          "high-performance-graphics"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "liquid-glass-js",
+        "name": "dashersw/liquid-glass-js",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "ui",
+          "shader",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "webgl-glass",
+          "refraction",
+          "blur",
+          "masking"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "motion-primitives",
+        "name": "Motion Primitives",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library",
+          "reference"
+        ],
+        "domains": [
+          "ui",
+          "motion",
+          "website",
+          "web-app"
+        ],
+        "capabilities": [
+          "motion-components",
+          "react-ui",
+          "templates",
+          "sections"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "animejs",
+        "name": "Anime.js",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "motion",
+          "ui"
+        ],
+        "capabilities": [
+          "timeline",
+          "dom-animation",
+          "svg-animation",
+          "js-object-animation",
+          "stagger",
+          "drag",
+          "scroll"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "threejs",
+        "name": "Three.js",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "3d",
+          "shader"
+        ],
+        "capabilities": [
+          "webgl",
+          "webgpu",
+          "scene",
+          "gltf",
+          "shader",
+          "postprocessing"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "lenis",
+        "name": "Lenis",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "motion",
+          "ui",
+          "3d"
+        ],
+        "capabilities": [
+          "smooth-scroll",
+          "scroll-sync",
+          "webgl-scroll"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "gsap",
+        "name": "GSAP",
+        "state": "configured",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "library"
+        ],
+        "domains": [
+          "motion",
+          "ui"
+        ],
+        "capabilities": [
+          "timeline",
+          "scroll",
+          "svg",
+          "cinematic-motion"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "spline-code-api",
+        "name": "Spline Code API",
+        "state": "ready",
+        "score": 80,
+        "configured": true,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "api"
+        ],
+        "domains": [
+          "3d",
+          "ui"
+        ],
+        "capabilities": [
+          "scene-variables",
+          "object-properties",
+          "events",
+          "transitions",
+          "runtime-interactivity"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      },
+      {
+        "id": "jitter",
+        "name": "Jitter",
+        "state": "research",
+        "score": 20,
+        "configured": false,
+        "adapterReady": false,
+        "sdk": null,
+        "kinds": [
+          "reference"
+        ],
+        "domains": [
+          "video",
+          "motion"
+        ],
+        "capabilities": [
+          "motion-design",
+          "timeline-animation",
+          "ai-animation",
+          "bulk-create",
+          "video-export"
+        ],
+        "endpoint": null,
+        "auth": null,
+        "blocker": null,
+        "isSdkPhase2Provider": false
+      }
+    ]
   },
-  "bootstrap": "npm run bootstrap:universal",
-  "refresh": "npm run snapshot:ecosystem"
+  "orchestration": {
+    "version": 2,
+    "capabilities": [
+      "model-inference",
+      "image-generation",
+      "video-generation",
+      "audio-generation",
+      "speech-generation",
+      "3d-generation",
+      "upscaling",
+      "asset-upload",
+      "asset-management"
+    ],
+    "priority": {
+      "model-inference": [
+        "fal",
+        "replicate"
+      ],
+      "image-generation": [
+        "fal",
+        "scenario",
+        "replicate",
+        "elevenlabs"
+      ],
+      "video-generation": [
+        "fal",
+        "scenario",
+        "replicate",
+        "elevenlabs"
+      ],
+      "audio-generation": [
+        "elevenlabs",
+        "fal",
+        "scenario",
+        "replicate"
+      ],
+      "speech-generation": [
+        "elevenlabs"
+      ],
+      "3d-generation": [
+        "scenario",
+        "fal",
+        "replicate"
+      ],
+      "upscaling": [
+        "replicate",
+        "fal",
+        "scenario"
+      ],
+      "asset-upload": [
+        "cloudinary"
+      ],
+      "asset-management": [
+        "cloudinary",
+        "scenario"
+      ]
+    },
+    "adapters": [
+      {
+        "id": "fal",
+        "mode": "sdk+rest",
+        "generation": true,
+        "capabilities": [
+          "model-inference",
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling"
+        ],
+        "operations": [
+          "submit"
+        ],
+        "pollOperations": [
+          "job"
+        ],
+        "fallbackSafeBeforeSubmitOnly": true,
+        "notes": "Generation submits through the established queue REST contract behind a unified adapter; SDK remains available for richer direct use."
+      },
+      {
+        "id": "replicate",
+        "mode": "sdk+rest",
+        "generation": true,
+        "capabilities": [
+          "model-inference",
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling"
+        ],
+        "operations": [
+          "predict"
+        ],
+        "pollOperations": [
+          "prediction"
+        ],
+        "fallbackSafeBeforeSubmitOnly": true,
+        "notes": "Async prediction REST path is preserved behind the adapter while the official SDK is installed. Auth remains deferred until verified."
+      },
+      {
+        "id": "elevenlabs",
+        "mode": "sdk+rest",
+        "generation": true,
+        "capabilities": [
+          "speech-generation",
+          "audio-generation",
+          "sound-effects",
+          "music"
+        ],
+        "operations": [
+          "speech"
+        ],
+        "pollOperations": [
+          "speech-job"
+        ],
+        "fallbackSafeBeforeSubmitOnly": true,
+        "notes": "Speech flow uses the existing async provider contract; official SDK is installed for future direct expansion."
+      },
+      {
+        "id": "scenario",
+        "mode": "sdk+rest",
+        "generation": true,
+        "capabilities": [
+          "image-generation",
+          "video-generation",
+          "audio-generation",
+          "3d-generation",
+          "upscaling",
+          "asset-management"
+        ],
+        "operations": [
+          "generate"
+        ],
+        "pollOperations": [],
+        "fallbackSafeBeforeSubmitOnly": true,
+        "notes": "Scenario SDK is installed; adapter keeps the verified universal REST generation path until API credentials are enabled."
+      },
+      {
+        "id": "cloudinary",
+        "mode": "sdk",
+        "generation": false,
+        "capabilities": [
+          "asset-upload",
+          "asset-management",
+          "image-transform",
+          "video-transform",
+          "media-delivery"
+        ],
+        "operations": [
+          "upload"
+        ],
+        "pollOperations": [],
+        "fallbackSafeBeforeSubmitOnly": true,
+        "notes": "Official Cloudinary Node SDK handles artifact upload and delivery. Upload is a mutation but is not a model-generation action."
+      }
+    ],
+    "safety": {
+      "externalExecutionAllowed": false,
+      "externalExecutionGate": "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true",
+      "paidGeneration": {
+        "mode": "free-only",
+        "allowPaidGeneration": false,
+        "money": "blocked",
+        "rule": "Any provider operation that can create a billable generation job must call assertPaidGenerationAllowed() immediately before the provider request.",
+        "fallbackRule": "Do not automatically resubmit an ambiguous provider generation failure to another vendor; verify whether the first job exists before retrying to avoid duplicate spend.",
+        "paidGenerationActions": [
+          "autosprite.createCharacter",
+          "autosprite.generateAnimations",
+          "spritecook.generate",
+          "meshy.textTo3D",
+          "fal.inference",
+          "replicate.prediction",
+          "ludo.generation",
+          "elevenlabs.speech",
+          "scenario.generation",
+          "SDK replicate:*",
+          "SDK fal:*",
+          "SDK elevenlabs:*",
+          "SDK scenario:*"
+        ],
+        "nonGenerationMutations": [
+          "cloudinary.upload",
+          "artifact.persist",
+          "artifact.place",
+          "github.patch",
+          "preview.deploy"
+        ],
+        "unaffectedCapabilities": [
+          "routing",
+          "planning",
+          "catalogs",
+          "provider-status",
+          "provider-health",
+          "sdk-status",
+          "project-context",
+          "github-read",
+          "artifact-read"
+        ],
+        "separateWriteLocks": {
+          "github": "GAME_SHOP_ALLOW_GITHUB_WRITES",
+          "externalIntegrations": "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS"
+        }
+      },
+      "fallback": "pre-submit routing only; no automatic duplicate generation after uncertain provider errors",
+      "secrets": "environment-only; never returned by orchestration APIs"
+    }
+  },
+  "artifactSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://game-shop-mcp/schema/artifact.schema.json",
+    "title": "Game Shop Artifact",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "artifactId",
+      "executionId",
+      "kind",
+      "purpose",
+      "status",
+      "name",
+      "metadata",
+      "createdAt",
+      "updatedAt"
+    ],
+    "properties": {
+      "artifactId": {
+        "type": "string",
+        "minLength": 8
+      },
+      "executionId": {
+        "type": "string",
+        "minLength": 8
+      },
+      "projectId": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "image",
+          "sprite",
+          "spritesheet",
+          "3d",
+          "video",
+          "audio",
+          "rive",
+          "document",
+          "code",
+          "archive",
+          "data",
+          "other"
+        ]
+      },
+      "purpose": {
+        "enum": [
+          "game",
+          "website",
+          "web-app",
+          "mobile-app",
+          "desktop-app",
+          "api-service",
+          "agent",
+          "automation",
+          "interactive-experience",
+          "digital-product",
+          "media-project",
+          "media",
+          "commerce",
+          "general",
+          "other"
+        ]
+      },
+      "status": {
+        "enum": [
+          "pending",
+          "ready",
+          "failed",
+          "archived"
+        ]
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "provider": {
+        "type": "string"
+      },
+      "providerJobId": {
+        "type": "string"
+      },
+      "mimeType": {
+        "type": "string"
+      },
+      "sourceUrl": {
+        "type": "string",
+        "format": "uri"
+      },
+      "storageUrl": {
+        "type": "string",
+        "format": "uri"
+      },
+      "metadata": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "providerResponse": {},
+          "providerStatus": {},
+          "normalized": {},
+          "orchestration": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "targetPath": {
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "waiting",
+                  "persisting",
+                  "persisted",
+                  "placing",
+                  "placed",
+                  "verifying",
+                  "previewing",
+                  "browser_qa",
+                  "repair_required",
+                  "completed",
+                  "failed"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "updatedAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "spendPolicy": {
+    "mode": "free-only",
+    "allowPaidGeneration": false,
+    "money": "blocked",
+    "rule": "Any provider operation that can create a billable generation job must call assertPaidGenerationAllowed() immediately before the provider request.",
+    "fallbackRule": "Do not automatically resubmit an ambiguous provider generation failure to another vendor; verify whether the first job exists before retrying to avoid duplicate spend.",
+    "paidGenerationActions": [
+      "autosprite.createCharacter",
+      "autosprite.generateAnimations",
+      "spritecook.generate",
+      "meshy.textTo3D",
+      "fal.inference",
+      "replicate.prediction",
+      "ludo.generation",
+      "elevenlabs.speech",
+      "scenario.generation",
+      "SDK replicate:*",
+      "SDK fal:*",
+      "SDK elevenlabs:*",
+      "SDK scenario:*"
+    ],
+    "nonGenerationMutations": [
+      "cloudinary.upload",
+      "artifact.persist",
+      "artifact.place",
+      "github.patch",
+      "preview.deploy"
+    ],
+    "unaffectedCapabilities": [
+      "routing",
+      "planning",
+      "catalogs",
+      "provider-status",
+      "provider-health",
+      "sdk-status",
+      "project-context",
+      "github-read",
+      "artifact-read"
+    ],
+    "separateWriteLocks": {
+      "github": "GAME_SHOP_ALLOW_GITHUB_WRITES",
+      "externalIntegrations": "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS"
+    }
+  },
+  "portability": {
+    "secretsCommitted": false,
+    "bootstrap": "npm run bootstrap:universal",
+    "refresh": "npm run snapshot:ecosystem",
+    "handoff": [
+      "AGENTS.md",
+      "docs/STANDALONE_PORTABILITY.md",
+      "llm-handoff/manifest.json",
+      "ecosystem.json",
+      "mcp.json"
+    ]
+  }
 }

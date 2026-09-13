@@ -1,28 +1,245 @@
 {
   "schemaVersion": 1,
-  "note": "Secret-free portable MCP configuration. Run npm run snapshot:ecosystem to regenerate from src/integrations.ts.",
   "gameShop": {
     "transport": "streamable-http",
     "url": "https://game-shop-mcp.vercel.app/api/mcp",
     "auth": "Bearer ${GAME_SHOP_MCP_TOKEN}",
-    "env": ["GAME_SHOP_MCP_TOKEN"]
+    "env": [
+      "GAME_SHOP_MCP_TOKEN"
+    ]
   },
   "servers": {
-    "21st-dev": { "url": "https://21st.dev/api/mcp", "env": ["API_KEY_21ST"] },
-    "motion-so": { "url": "https://mcp.motion.so/mcp", "env": ["MOTION_SO_API_KEY"], "auth": "OAuth preferred; bearer/service key supported" },
-    "raylight": { "url": "https://api.raylight.app/mcp", "auth": "OAuth" },
-    "ludo": { "url": "https://mcp.ludo.ai/mcp", "env": ["LUDO_API_KEY"], "auth": "ApiKey" },
-    "fal": { "url": "https://mcp.fal.ai/mcp", "env": ["FAL_KEY"] },
-    "replicate": { "url": "https://mcp.replicate.com", "env": ["REPLICATE_API_TOKEN"], "status": "auth-deferred" },
-    "elevenlabs": { "url": "https://api.elevenlabs.io/v1/mcp", "env": ["ELEVENLABS_API_KEY"] },
-    "originkit": { "url": "https://mcp.originkit.dev/mcp", "env": ["ORIGINKIT_API_KEY"] },
-    "shaders": { "url": "https://shaders.com/mcp", "env": ["SHADERS_API_KEY"] },
-    "preline": { "url": "https://mcp.preline.co", "env": ["PRELINE_API_KEY"] },
-    "kibo-ui": { "url": "https://www.kibo-ui.com/api/mcp/mcp", "status": "vendor-blocked-http-500" }
+    "21st-dev": {
+      "url": "https://21st.dev/api/mcp",
+      "env": [
+        "API_KEY_21ST"
+      ],
+      "auth": "API key for CLI/CI; hosted MCP can use interactive sign-in where supported.",
+      "state": "needs-auth",
+      "capabilities": [
+        "component-search",
+        "component-install",
+        "ui-generation",
+        "themes",
+        "templates",
+        "publishing",
+        "mcp-app-ui"
+      ]
+    },
+    "motion-so": {
+      "url": "https://mcp.motion.so/mcp",
+      "env": [
+        "MOTION_SO_API_KEY"
+      ],
+      "auth": "OAuth 2.1 is preferred for MCP; service-account or Bearer Motion API keys are supported. Game Shop uses MOTION_SO_API_KEY as its local env name.",
+      "state": "needs-auth",
+      "capabilities": [
+        "prompt-to-video",
+        "session-create",
+        "session-poll",
+        "followup",
+        "design-system",
+        "style-reference",
+        "attachments",
+        "source-audit"
+      ]
+    },
+    "raylight-mcp": {
+      "url": "https://api.raylight.app/mcp",
+      "env": [],
+      "auth": "OAuth through MCP client; keep Raylight project open.",
+      "state": "needs-auth",
+      "capabilities": [
+        "project-list",
+        "shot-read",
+        "shot-edit",
+        "animation-edit",
+        "render-frames",
+        "visual-review"
+      ]
+    },
+    "ludo-ai": {
+      "url": "https://mcp.ludo.ai/mcp",
+      "env": [
+        "LUDO_API_KEY"
+      ],
+      "auth": "Remote HTTP MCP: Authentication: ApiKey <key>; REST base https://api.ludo.ai/api/.",
+      "state": "needs-auth",
+      "capabilities": [
+        "image-generation",
+        "sprites",
+        "spritesheets",
+        "background-removal",
+        "3d-glb",
+        "rigging",
+        "animation",
+        "music",
+        "sound-effects",
+        "voice",
+        "voice-cloning",
+        "video",
+        "generation-history",
+        "job-status",
+        "job-cancel",
+        "docs"
+      ]
+    },
+    "meshy": {
+      "url": "https://api.meshy.ai",
+      "env": [
+        "MESHY_API_KEY"
+      ],
+      "auth": "Bearer API key.",
+      "state": "needs-auth",
+      "capabilities": [
+        "text-to-3d",
+        "image-to-3d",
+        "texturing",
+        "task-status",
+        "asset-download"
+      ]
+    },
+    "fal-ai": {
+      "url": "https://mcp.fal.ai/mcp",
+      "env": [
+        "FAL_KEY"
+      ],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "model-search",
+        "schema-inspection",
+        "inference",
+        "file-upload",
+        "image",
+        "video",
+        "audio",
+        "3d",
+        "queue",
+        "webhooks"
+      ]
+    },
+    "replicate": {
+      "url": "https://mcp.replicate.com",
+      "env": [
+        "REPLICATE_API_TOKEN"
+      ],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "model-search",
+        "predictions",
+        "image",
+        "video",
+        "audio",
+        "3d",
+        "upscaling"
+      ]
+    },
+    "elevenlabs": {
+      "url": "https://api.elevenlabs.io/v1/mcp",
+      "env": [
+        "ELEVENLABS_API_KEY"
+      ],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "speech",
+        "voices",
+        "sound-effects",
+        "music",
+        "image-generation",
+        "video-generation",
+        "agents"
+      ]
+    },
+    "motionsites-mcp": {
+      "url": "https://xgdzyqfalbibzelpdpvr.supabase.co/functions/v1/mcp",
+      "env": [],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "website-design-prompts",
+        "design-reference",
+        "agent-design-guidance"
+      ]
+    },
+    "unison-brain": {
+      "url": "https://brain.unisonlabs.ai",
+      "env": [
+        "UNISON_TOKEN"
+      ],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "project-memory",
+        "context-recall",
+        "ingest",
+        "search",
+        "facts",
+        "knowledge-graph",
+        "remember",
+        "write",
+        "edit",
+        "status"
+      ]
+    },
+    "preline-ui": {
+      "url": "https://mcp.preline.co",
+      "env": [
+        "PRELINE_API_KEY"
+      ],
+      "auth": null,
+      "state": "needs-auth",
+      "capabilities": [
+        "components-list",
+        "component-source",
+        "blocks",
+        "component-docs",
+        "themes"
+      ]
+    },
+    "originkit-mcp": {
+      "url": "https://mcp.originkit.dev/mcp",
+      "env": [
+        "ORIGINKIT_API_KEY"
+      ],
+      "auth": "Bearer API key for code editors; OAuth/sign-in supported by compatible chat clients.",
+      "state": "needs-auth",
+      "capabilities": [
+        "list-components",
+        "get-component",
+        "search",
+        "fetch",
+        "stack-adaptation",
+        "registry-api"
+      ]
+    },
+    "shaders-mcp": {
+      "url": "https://shaders.com/mcp",
+      "env": [
+        "SHADERS_API_KEY"
+      ],
+      "auth": "Bearer API key or OAuth in supported connector clients.",
+      "state": "needs-auth",
+      "capabilities": [
+        "shader-install",
+        "shader-edit",
+        "preset-access",
+        "webgpu-effects",
+        "javascript-api",
+        "shadcn-registry"
+      ]
+    }
   },
   "localServers": {
-    "contextcore": { "transport": "stdio", "command": "~/.local/share/game-shop/contextcore-mcp-wrapper.sh", "status": "verify-local-runtime" },
-    "wangp": { "transport": "stdio", "command": "python wgp.py --mcp --mcp-transport stdio", "status": "opt-in-heavy-local-runtime" },
-    "spline": { "transport": "desktop", "status": "requires-spline-app" }
+    "contextcore": {
+      "transport": "stdio",
+      "command": "~/.local/share/game-shop/contextcore-mcp-wrapper.sh"
+    },
+    "wangp": {
+      "transport": "stdio",
+      "command": "python wgp.py --mcp --mcp-transport stdio"
+    }
   }
 }
