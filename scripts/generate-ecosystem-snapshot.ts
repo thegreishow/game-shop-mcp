@@ -1,0 +1,22 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { integrationRegistry } from "../src/integrations.js";
+import { providerStatus } from "../src/providers.js";
+import { externalEngineStatus } from "../src/external-engines.js";
+import { providerAdapterRegistry } from "../src/provider-adapters-v2.js";
+import { providerHealthSummary } from "../src/provider-health-v2.js";
+import { realOrchestrationInfo } from "../src/real-orchestration.js";
+import { sdkHubStatus, sdkRoutingPriority } from "../src/sdk-hub.js";
+import { spendPolicy } from "../src/spend.js";
+
+const integrations=integrationRegistry();
+const sdk=sdkHubStatus();
+const adapters=providerAdapterRegistry();
+const artifactSchema=JSON.parse(await readFile(new URL("../schemas/artifact.schema.json",import.meta.url),"utf8"));
+const generatedAt=new Date().toISOString();
+const ecosystem={schemaVersion:2,generatedAt,repository:"thegreishow/game-shop-mcp",canonicalSources:{integrations:"src/integrations.ts",providers:"src/providers.ts",externalEngines:"src/external-engines.ts",sdkHub:"src/sdk-hub.ts",adapters:"src/provider-adapters-v2.ts",health:"src/provider-health-v2.ts",orchestration:"src/real-orchestration.ts",artifactSchema:"schemas/artifact.schema.json",spend:"src/spend.ts",security:"src/security.ts"},integrations,legacyGameArtProviders:providerStatus(),externalEngineStatus:externalEngineStatus(),sdk:{providers:sdk,routingPriority:sdkRoutingPriority()},adapters,health:providerHealthSummary(),orchestration:realOrchestrationInfo(),artifactSchema,spendPolicy:spendPolicy(),portability:{secretsCommitted:false,bootstrap:"npm run bootstrap:universal",refresh:"npm run snapshot:ecosystem",handoff:["AGENTS.md","docs/STANDALONE_PORTABILITY.md","llm-handoff/manifest.json","ecosystem.json","mcp.json"]}};
+const servers=Object.fromEntries(integrations.filter(i=>i.kinds.includes("mcp")&&i.endpoint).map(i=>[i.id,{url:i.endpoint,env:i.env??[],auth:i.auth??null,state:i.state,capabilities:i.capabilities}]));
+const mcp={schemaVersion:1,generatedAt,gameShop:{transport:"streamable-http",url:process.env.GAME_SHOP_PUBLIC_URL||"https://game-shop-mcp.vercel.app/api/mcp",auth:"Bearer ${GAME_SHOP_MCP_TOKEN}",env:["GAME_SHOP_MCP_TOKEN"]},servers,localServers:{contextcore:{transport:"stdio",command:"~/.local/share/game-shop/contextcore-mcp-wrapper.sh"},wangp:{transport:"stdio",command:"python wgp.py --mcp --mcp-transport stdio"}}};
+await writeFile(new URL("../ecosystem.json",import.meta.url),JSON.stringify(ecosystem,null,2)+"\n");
+await writeFile(new URL("../mcp.json",import.meta.url),JSON.stringify(mcp,null,2)+"\n");
+console.log(`ecosystem=${integrations.length} integrations sdk=${sdk.length} adapters=${adapters.length} mcp=${Object.keys(servers).length}`);
+console.log("No secret values written.");
