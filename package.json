@@ -11,6 +11,8 @@
     "verify:oauth-live": "tsx scripts/verify-oauth-live.ts",
     "verify:oauth-runtime-live": "tsx scripts/oauth-live-smoke.ts",
     "setup:preline": "bash scripts/setup-preline.sh",
+    "setup:sdk-hub": "bash scripts/setup-sdk-hub.sh",
+    "test:sdk-hub": "tsx scripts/sdk-hub-smoke.ts",
     "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
   },
   "dependencies": {
