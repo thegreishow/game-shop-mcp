@@ -37,6 +37,7 @@
     "cloudinary": "^2.11.0",
     "dotenv": "^17.4.2",
     "firebase": "^12.19.0",
+    "firebase-admin": "^13.10.0",
     "igdb-api-node": "^6.0.5",
     "mcp-handler": "^2.1.1",
     "openai": "^7.15.0",
