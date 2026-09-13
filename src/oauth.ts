@@ -17,7 +17,7 @@ export function oauthClientId(){return process.env.GAME_SHOP_OAUTH_CLIENT_ID?.tr
 export function ownerSecret(){return process.env.GAME_SHOP_OAUTH_OWNER_SECRET?.trim()||"";}
 export function ownerSecretMatches(candidate:string){const expected=ownerSecret();if(!expected)return false;const a=Buffer.from(candidate),b=Buffer.from(expected);return a.length===b.length&&timingSafeEqual(a,b);}
 export function normalizeScope(raw:string|undefined){const requested=(raw||"gameshop.read").split(/\s+/).filter(Boolean);const allowed=requested.filter(scope=>(OAUTH_SCOPES as readonly string[]).includes(scope));return allowed.length?allowed.join(" "):"gameshop.read";}
-export function redirectAllowed(raw:string){try{const url=new URL(raw);if(url.protocol!=="https:")return false;const extra=(process.env.GAME_SHOP_OAUTH_REDIRECT_HOSTS||"").split(",").map(v=>v.trim()).filter(Boolean);const allowed=["grok.com","x.ai","chatgpt.com","openai.com",...extra];return allowed.some(host=>url.hostname===host||url.hostname.endsWith(`.${host}`));}catch{return false;}}
+export function redirectAllowed(raw:string){try{const url=new URL(raw);const extra=(process.env.GAME_SHOP_OAUTH_REDIRECT_HOSTS||"").split(",").map(v=>v.trim()).filter(Boolean);if(url.protocol==="https:"){const allowed=["grok.com","x.ai","chatgpt.com","openai.com",...extra];return allowed.some(host=>url.hostname===host||url.hostname.endsWith(`.${host}`));}if(url.protocol==="http:"){return ["localhost","127.0.0.1","::1","[::1]"].includes(url.hostname);}return ["chatgpt:","openai:","com.openai.chatgpt:"].includes(url.protocol);}catch{return false;}}
 export function canonicalResource(issuer:string){return `${issuer.replace(/\/$/,"")}/mcp`;}
 export function normalizeResource(raw:string|undefined,issuer:string){const expected=canonicalResource(issuer);if(!raw)return expected;let candidate="";try{candidate=new URL(raw).toString().replace(/\/$/,"");}catch{throw new Error("Invalid OAuth resource.");}if(candidate!==expected)throw new Error("OAuth resource does not match the protected Game Shop MCP resource.");return candidate;}
 
@@ -31,29 +31,24 @@ export type DynamicClientRegistrationMetadata={
   scope?:unknown;
 };
 
-function stringArray(value:unknown){return Array.isArray(value)?value.filter((item):item is string=>typeof item==="string"):[];}
+function stringArray(value:unknown){if(Array.isArray(value))return value.filter((item):item is string=>typeof item==="string");if(typeof value==="string")return[value];return[];}
 function normalizeRegistrationRedirectUris(input:DynamicClientRegistrationMetadata){
   const values=[...stringArray(input.redirect_uris)];
   if(typeof input.redirect_uri==="string")values.push(input.redirect_uri);
   return [...new Set(values.map(v=>v.trim()).filter(Boolean))];
 }
-function assertRegistrationValues(input:DynamicClientRegistrationMetadata){
-  const method=typeof input.token_endpoint_auth_method==="string"?input.token_endpoint_auth_method:"none";
-  if(method!=="none")throw new Error("Only public OAuth clients using token_endpoint_auth_method=none are supported.");
-  const grantTypes=stringArray(input.grant_types);
-  if(grantTypes.length&&grantTypes.some(grant=>!["authorization_code","refresh_token"].includes(grant)))throw new Error("Unsupported OAuth grant type requested.");
-  const responseTypes=stringArray(input.response_types);
-  if(responseTypes.length&&responseTypes.some(type=>type!=="code"))throw new Error("Unsupported OAuth response type requested.");
-  if(typeof input.scope==="string")normalizeScope(input.scope);
-}
+function normalizedRegistrationScope(input:DynamicClientRegistrationMetadata){return typeof input.scope==="string"?normalizeScope(input.scope):undefined;}
 
 export function createDynamicClient(input:{issuer:string;redirectUris:string[];metadata?:DynamicClientRegistrationMetadata}){
-  assertRegistrationValues(input.metadata||{});
+  const metadata=input.metadata||{};
   const redirectUris=[...new Set(input.redirectUris.map(v=>v.trim()).filter(Boolean))];
   if(!redirectUris.length||redirectUris.some(uri=>!redirectAllowed(uri)))throw new Error("Invalid OAuth redirect URI.");
   const now=Math.floor(Date.now()/1000);
   const clientId=sign({typ:"client",iss:input.issuer,aud:`${input.issuer}/oauth/authorize`,sub:"dynamic-client",client_id:"dynamic",scope:"",iat:now,exp:now+31536000,redirect_uris:redirectUris,jti:crypto.randomUUID()});
-  return{client_id:clientId,client_id_issued_at:now,redirect_uris:redirectUris,token_endpoint_auth_method:"none",grant_types:["authorization_code","refresh_token"],response_types:["code"]};
+  const response:{client_id:string;client_id_issued_at:number;redirect_uris:string[];token_endpoint_auth_method:"none";grant_types:string[];response_types:string[];client_name?:string;scope?:string}={client_id:clientId,client_id_issued_at:now,redirect_uris:redirectUris,token_endpoint_auth_method:"none",grant_types:["authorization_code","refresh_token"],response_types:["code"]};
+  if(typeof metadata.client_name==="string"&&metadata.client_name.trim())response.client_name=metadata.client_name.trim();
+  const scope=normalizedRegistrationScope(metadata);if(scope)response.scope=scope;
+  return response;
 }
 
 export function createDynamicClientFromMetadata(input:{issuer:string;metadata:DynamicClientRegistrationMetadata}){
