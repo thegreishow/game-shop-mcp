@@ -10,12 +10,14 @@
     "test:oauth": "tsx scripts/oauth-smoke.ts",
     "verify:oauth-live": "tsx scripts/verify-oauth-live.ts",
     "verify:oauth-runtime-live": "tsx scripts/oauth-live-smoke.ts",
+    "setup:preline": "bash scripts/setup-preline.sh",
     "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
     "animejs": "^4.5.0",
     "mcp-handler": "^2.1.1",
+    "preline": "^3.2.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
