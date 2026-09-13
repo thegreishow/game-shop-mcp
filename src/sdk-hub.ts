@@ -19,7 +19,11 @@ export type SdkCapability =
 export type SdkProviderDefinition = {
   id: SdkProviderId;
   packageName: string;
+  version: string;
+  install: string;
   env: readonly string[];
+  apiBase: string;
+  authScheme: string;
   capabilities: readonly SdkCapability[];
   generationProvider: boolean;
   notes: string;
@@ -29,39 +33,59 @@ export const SDK_PROVIDERS: Record<SdkProviderId, SdkProviderDefinition> = {
   replicate: {
     id: "replicate",
     packageName: "replicate",
+    version: "^1.4.0",
+    install: "npm install replicate",
     env: ["REPLICATE_API_TOKEN"],
+    apiBase: "https://api.replicate.com/v1",
+    authScheme: "API token; official SDK uses auth option and HTTP API uses bearer/token authentication depending on client surface.",
     capabilities: ["model-inference", "image-generation", "video-generation", "audio-generation", "3d-generation", "upscaling"],
     generationProvider: true,
-    notes: "Official Replicate JavaScript client. Authentication remains provider-dependent; SDK loading is independent of auth readiness.",
+    notes: "Official Replicate JavaScript client. Installed even while account-token verification is deferred so routing metadata remains portable.",
   },
   fal: {
     id: "fal",
     packageName: "@fal-ai/client",
+    version: "^1.10.1",
+    install: "npm install @fal-ai/client",
     env: ["FAL_KEY"],
+    apiBase: "https://queue.fal.run",
+    authScheme: "FAL_KEY; queue REST uses Authorization: Key <credential>; official SDK supports fal.config({ credentials }).",
     capabilities: ["model-inference", "image-generation", "video-generation", "audio-generation", "3d-generation", "upscaling"],
     generationProvider: true,
-    notes: "Official fal JavaScript client with queue and file helpers.",
+    notes: "Official fal JavaScript client with queue, subscribe, upload and inference helpers.",
   },
   elevenlabs: {
     id: "elevenlabs",
     packageName: "@elevenlabs/elevenlabs-js",
+    version: "^2.68.0",
+    install: "npm install @elevenlabs/elevenlabs-js",
     env: ["ELEVENLABS_API_KEY"],
+    apiBase: "https://api.elevenlabs.io/v1",
+    authScheme: "xi-api-key header or ElevenLabsClient({ apiKey }). Server-side only.",
     capabilities: ["speech-generation", "audio-generation", "image-generation", "video-generation"],
     generationProvider: true,
-    notes: "Official ElevenLabs Node SDK. Server-side only; never expose ELEVENLABS_API_KEY to browser clients.",
+    notes: "Official ElevenLabs Node SDK. Keep API keys server-side; browser/client SDKs require separate scoped-token patterns.",
   },
   scenario: {
     id: "scenario",
     packageName: "@scenario-labs/sdk",
+    version: "^3.1.0",
+    install: "npm install @scenario-labs/sdk",
     env: ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"],
+    apiBase: "https://api.cloud.scenario.com/v1",
+    authScheme: "Scenario API key + API secret through the official server-side SDK.",
     capabilities: ["image-generation", "video-generation", "audio-generation", "3d-generation", "upscaling", "asset-management"],
     generationProvider: true,
-    notes: "Official Scenario TypeScript SDK. API access remains deferred until both key and secret are configured.",
+    notes: "Official Scenario TypeScript SDK. API access remains deferred until both key and secret are configured on a compatible plan.",
   },
   cloudinary: {
     id: "cloudinary",
     packageName: "cloudinary",
+    version: "^2.11.0",
+    install: "npm install cloudinary",
     env: ["CLOUDINARY_URL"],
+    apiBase: "https://api.cloudinary.com",
+    authScheme: "CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>; credentials must remain server-side.",
     capabilities: ["asset-upload", "asset-management", "image-transform", "video-transform", "media-delivery"],
     generationProvider: false,
     notes: "Official Cloudinary Node SDK for artifact upload, transformation, optimization and delivery.",
@@ -70,9 +94,9 @@ export const SDK_PROVIDERS: Record<SdkProviderId, SdkProviderDefinition> = {
 
 const ROUTE_PRIORITY: Record<SdkCapability, readonly SdkProviderId[]> = {
   "model-inference": ["fal", "replicate"],
-  "image-generation": ["fal", "replicate", "scenario", "elevenlabs"],
-  "video-generation": ["fal", "replicate", "scenario", "elevenlabs"],
-  "audio-generation": ["elevenlabs", "fal", "replicate", "scenario"],
+  "image-generation": ["fal", "scenario", "replicate", "elevenlabs"],
+  "video-generation": ["fal", "scenario", "replicate", "elevenlabs"],
+  "audio-generation": ["elevenlabs", "fal", "scenario", "replicate"],
   "speech-generation": ["elevenlabs"],
   "3d-generation": ["scenario", "fal", "replicate"],
   upscaling: ["replicate", "fal", "scenario"],
@@ -96,12 +120,20 @@ export function sdkHubStatus() {
   return Object.values(SDK_PROVIDERS).map((provider) => ({
     id: provider.id,
     packageName: provider.packageName,
+    version: provider.version,
+    install: provider.install,
     configured: sdkProviderConfigured(provider.id),
     requiredEnv: [...provider.env],
+    apiBase: provider.apiBase,
+    authScheme: provider.authScheme,
     capabilities: [...provider.capabilities],
     generationProvider: provider.generationProvider,
     notes: provider.notes,
   }));
+}
+
+export function sdkRoutingPriority() {
+  return ROUTE_PRIORITY;
 }
 
 export function routeSdkCapability(
@@ -196,7 +228,6 @@ export async function executeSdkGeneration<T>(
   invoke: (client: unknown) => Promise<T>,
 ): Promise<T> {
   const client = await createSdkClient(provider);
-  // Keep the spend lock immediately before the callback that performs the provider request.
   assertPaidGenerationAllowed(`SDK ${provider}: ${action}`);
   return invoke(client);
 }
