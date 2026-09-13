@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "snapshotState": "checked-in seed; refresh with npm run snapshot:ecosystem",
+  "repository": "thegreishow/game-shop-mcp",
+  "canonicalSources": {
+    "fullProviderCapabilities": "src/integrations.ts",
+    "gameArtProviderContracts": "src/providers.ts",
+    "liveRestOperations": "src/external-engines.ts",
+    "sdkPackagesAndRouting": "src/sdk-hub.ts",
+    "providerAdapters": "src/provider-adapters-v2.ts",
+    "providerHealthAndBlockers": "src/provider-health-v2.ts",
+    "realOrchestration": "src/real-orchestration.ts",
+    "artifactSchema": "schemas/artifact.schema.json",
+    "spendRules": "src/spend.ts",
+    "securityRules": "src/security.ts",
+    "mcpConfig": "mcp.json",
+    "agentHandoff": "AGENTS.md"
+  },
+  "sdkHub": {
+    "providers": {
+      "replicate": { "package": "replicate", "version": "^1.4.0", "install": "npm install replicate", "env": ["REPLICATE_API_TOKEN"], "apiBase": "https://api.replicate.com/v1", "status": "auth-deferred" },
+      "fal": { "package": "@fal-ai/client", "version": "^1.10.1", "install": "npm install @fal-ai/client", "env": ["FAL_KEY"], "apiBase": "https://queue.fal.run", "status": "configured" },
+      "elevenlabs": { "package": "@elevenlabs/elevenlabs-js", "version": "^2.68.0", "install": "npm install @elevenlabs/elevenlabs-js", "env": ["ELEVENLABS_API_KEY"], "apiBase": "https://api.elevenlabs.io/v1", "status": "ready" },
+      "scenario": { "package": "@scenario-labs/sdk", "version": "^3.1.0", "install": "npm install @scenario-labs/sdk", "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"], "apiBase": "https://api.cloud.scenario.com/v1", "status": "auth-deferred" },
+      "cloudinary": { "package": "cloudinary", "version": "^2.11.0", "install": "npm install cloudinary", "env": ["CLOUDINARY_URL"], "apiBase": "https://api.cloudinary.com", "status": "configured" }
+    },
+    "routing": {
+      "model-inference": ["fal", "replicate"],
+      "image-generation": ["fal", "scenario", "replicate", "elevenlabs"],
+      "video-generation": ["fal", "scenario", "replicate", "elevenlabs"],
+      "audio-generation": ["elevenlabs", "fal", "scenario", "replicate"],
+      "speech-generation": ["elevenlabs"],
+      "3d-generation": ["scenario", "fal", "replicate"],
+      "upscaling": ["replicate", "fal", "scenario"],
+      "asset-upload": ["cloudinary"],
+      "asset-management": ["cloudinary", "scenario"]
+    }
+  },
+  "knownBlockers": {
+    "replicate": "read-only authentication verification currently deferred/failing; do not auto-route paid work until re-verified",
+    "kibo-ui": "official MCP POST handshake returned provider HTTP 500",
+    "contextcore": "local runtime; verify stdio wrapper per machine",
+    "spline-mcp": "desktop application required",
+    "wangp": "heavy local runtime intentionally opt-in",
+    "scenario": "requires API key + secret on compatible plan"
+  },
+  "safety": {
+    "paidGenerationDefault": "blocked",
+    "enablePaidGeneration": "GAME_SHOP_ALLOW_PAID_GENERATION=true",
+    "automaticPostSubmitFallback": false,
+    "secretsCommitted": false
+  },
+  "bootstrap": "npm run bootstrap:universal",
+  "refresh": "npm run snapshot:ecosystem"
+}
