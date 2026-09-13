@@ -1,4 +1,4 @@
-export type BackendAdapterId = "supabase" | "stripe" | "openai" | "clerk" | "igdb";
+export type BackendAdapterId = "supabase" | "stripe" | "openai" | "clerk" | "igdb" | "firebase-admin";
 
 export type BackendAdapterDefinition = {
   id: BackendAdapterId;
@@ -49,6 +49,14 @@ export const BACKEND_ADAPTERS: Record<BackendAdapterId, BackendAdapterDefinition
     env: ["IGDB_CLIENT_ID", "IGDB_ACCESS_TOKEN"],
     capabilities: ["game-metadata", "covers", "companies", "genres", "release-dates", "search"],
     notes: "IGDB Node wrapper using Twitch Client ID + App Access Token. Read-oriented metadata integration; token remains server-only.",
+  },
+  "firebase-admin": {
+    id: "firebase-admin",
+    packageName: "firebase-admin",
+    version: "^13.10.0",
+    env: ["FIREBASE_SERVICE_ACCOUNT_JSON"],
+    capabilities: ["authentication", "users", "firestore", "storage", "messaging", "realtime-database"],
+    notes: "Privileged Firebase Admin SDK for controlled server-side operations. Uses a server-only service account JSON value; writes must remain explicitly gated.",
   },
 };
 
@@ -101,6 +109,18 @@ export async function createBackendClient(id: BackendAdapterId): Promise<unknown
   if (id === "clerk") {
     const { createClerkClient } = await import("@clerk/backend");
     return createClerkClient({ secretKey: requiredSecret("CLERK_SECRET_KEY") });
+  }
+
+  if (id === "firebase-admin") {
+    const { cert, getApp, getApps, initializeApp } = await import("firebase-admin/app");
+    if (getApps().length) return getApp();
+    let serviceAccount: unknown;
+    try {
+      serviceAccount = JSON.parse(requiredSecret("FIREBASE_SERVICE_ACCOUNT_JSON"));
+    } catch {
+      throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON must contain valid service-account JSON.");
+    }
+    return initializeApp({ credential: cert(serviceAccount as any) });
   }
 
   const mod = await import("igdb-api-node");
