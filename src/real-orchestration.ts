@@ -202,7 +202,7 @@ export async function orchestrateProviderCapability(request: RealOrchestrationRe
       data: { status: result.normalized.status },
     }).catch(() => undefined);
 
-    let registeredArtifact = record(result.raw).artifact ?? null;
+    let registeredArtifact: any = record(result.raw).artifact ?? null;
     let artifactOrchestration = null;
     if (provider === "cloudinary" && request.executionId && result.normalized.assets[0]) {
       const asset = result.normalized.assets[0];
