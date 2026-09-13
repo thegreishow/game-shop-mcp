@@ -6,6 +6,23 @@ import { registerWorkbenchTools } from "../src/register-workbench-tools.js";
 import { registerSdkTools } from "../src/register-sdk-tools.js";
 import { routeMcp } from "../src/mcp-route.js";
 
+const submissionAnnotationOverrides:Record<string,Record<string,boolean>>={
+  gameshop_invoke_integration:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_orchestrate_integrations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_execute_github_plan:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_github_upsert_file:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_cancel_execution:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
+  gameshop_orchestrate_artifact:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_cancel_durable_execution:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
+  gameshop_task_cancel:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
+  gameshop_place_artifact:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_run_qa:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+  gameshop_apply_patch:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_remove_project_v2:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
+  gameshop_run_autonomous_pipeline:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_continue_provider_task:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+};
+
 function withSubmissionAnnotations(server:any){
   const registerTool=server.registerTool.bind(server);
   server.registerTool=(name:string,definition:any,handler:any)=>{
@@ -14,6 +31,7 @@ function withSubmissionAnnotations(server:any){
       destructiveHint:false,
       openWorldHint:false,
       ...(definition?.annotations||{}),
+      ...(submissionAnnotationOverrides[name]||{}),
     };
     return registerTool(name,{...definition,annotations},handler);
   };
