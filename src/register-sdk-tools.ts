@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { backendAdapterStatus } from "./backend-adapters.js";
 import { publicErrorMessage } from "./errors.js";
 import { providerAdapterRegistry } from "./provider-adapters-v2.js";
 import { providerHealthSummary } from "./provider-health-v2.js";
@@ -100,11 +101,15 @@ export function registerSdkTools(server: any) {
     "gameshop_sdk_hub_status",
     {
       title: "SDK Hub Status",
-      description: "Inspect installed/configured SDK providers, package metadata and capabilities without calling providers.",
+      description: "Inspect installed/configured SDK providers, backend adapters, package metadata and capabilities without calling providers.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
-    safe(async () => ({ providers: sdkHubStatus(), adapters: providerAdapterRegistry() })),
+    safe(async () => ({
+      providers: sdkHubStatus(),
+      adapters: providerAdapterRegistry(),
+      backendAdapters: backendAdapterStatus(),
+    })),
   );
 
   server.registerTool(
