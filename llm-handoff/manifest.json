@@ -1,85 +1,84 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "project": "game-shop-mcp",
   "architecture": {
-    "principle": "Game Shop orchestrates providers but direct provider access must remain possible.",
-    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime"],
+    "principle": "Game Shop orchestrates providers while direct provider MCP/API/SDK access remains possible.",
+    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "orchestration"],
     "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
     "paidGenerationDefault": "blocked",
-    "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION"
+    "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION",
+    "fallbackPolicy": "route-before-submit only; never auto-resubmit an ambiguous paid generation to another provider"
   },
   "canonicalFiles": [
     "AGENTS.md",
+    "ecosystem.json",
+    "mcp.json",
+    "llm-handoff/agent-config.json",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/SDK_HUB.md",
+    "docs/REAL_ORCHESTRATION.md",
     "src/integrations.ts",
     "src/sdk-hub.ts",
-    "src/external-engines.ts",
+    "src/provider-adapters-v2.ts",
+    "src/provider-health-v2.ts",
+    "src/normalized-output.ts",
+    "src/real-orchestration.ts",
+    "src/orchestrator.ts",
     "src/spend.ts",
+    "src/security.ts",
+    "schemas/artifact.schema.json",
     ".env.example"
   ],
-  "sdkHubPhase1": {
+  "sdkHubPhase2": {
     "status": "active",
+    "realOrchestration": true,
+    "mcpExposed": true,
     "providers": [
-      {
-        "id": "replicate",
-        "package": "replicate",
-        "env": ["REPLICATE_API_TOKEN"],
-        "authStatus": "deferred-provider-auth-issue",
-        "generation": true
-      },
-      {
-        "id": "fal",
-        "package": "@fal-ai/client",
-        "env": ["FAL_KEY"],
-        "authStatus": "configured-not-live-verified",
-        "generation": true
-      },
-      {
-        "id": "elevenlabs",
-        "package": "@elevenlabs/elevenlabs-js",
-        "env": ["ELEVENLABS_API_KEY"],
-        "authStatus": "ready",
-        "generation": true
-      },
-      {
-        "id": "scenario",
-        "package": "@scenario-labs/sdk",
-        "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"],
-        "authStatus": "sdk-installed-api-deferred",
-        "generation": true
-      },
-      {
-        "id": "cloudinary",
-        "package": "cloudinary",
-        "env": ["CLOUDINARY_URL"],
-        "authStatus": "configured-not-mutated",
-        "generation": false
-      }
+      { "id": "replicate", "package": "replicate", "version": "^1.4.0", "env": ["REPLICATE_API_TOKEN"], "authStatus": "deferred-provider-auth-issue", "generation": true },
+      { "id": "fal", "package": "@fal-ai/client", "version": "^1.10.1", "env": ["FAL_KEY"], "authStatus": "configured", "generation": true },
+      { "id": "elevenlabs", "package": "@elevenlabs/elevenlabs-js", "version": "^2.68.0", "env": ["ELEVENLABS_API_KEY"], "authStatus": "ready", "generation": true },
+      { "id": "scenario", "package": "@scenario-labs/sdk", "version": "^3.1.0", "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"], "authStatus": "sdk-installed-api-deferred", "generation": true },
+      { "id": "cloudinary", "package": "cloudinary", "version": "^2.11.0", "env": ["CLOUDINARY_URL"], "authStatus": "configured", "generation": false }
+    ],
+    "tools": [
+      "gameshop_sdk_hub_status",
+      "gameshop_provider_health",
+      "gameshop_real_orchestration_info",
+      "gameshop_plan_provider_task",
+      "gameshop_run_provider_task",
+      "gameshop_continue_provider_task"
     ]
   },
   "notableStandaloneStatus": {
     "autosprite": "configured-local-and-vercel",
-    "contextcore": "local-runtime-repair-in-progress-or-recently-repaired",
+    "replicate": "adapter-ready-auth-deferred",
+    "contextcore": "local-runtime-verify-per-machine",
     "kibo": "vendor-blocked-http-500",
     "spline": "local-app-required",
     "wangp": "local-runtime-deferred",
     "ludo": "auth-deferred",
     "scenarioApi": "auth-deferred"
   },
+  "machineReadable": {
+    "ecosystem": "ecosystem.json",
+    "mcp": "mcp.json",
+    "artifactSchema": "schemas/artifact.schema.json",
+    "refresh": "npm run snapshot:ecosystem"
+  },
   "handoff": {
+    "bootstrap": "npm run bootstrap:universal",
+    "verify": "npm run verify:standalone",
     "command": "npm run handoff:llm",
     "output": "dist/llm-handoff",
-    "targetAgents": ["Grok", "Grokbot", "Claude", "Gemini", "Codex", "other coding agents"],
+    "targetAgents": ["Grok", "Grokbot", "Claude", "Gemini", "Codex", "other MCP/coding agents"],
     "readOrder": [
       "AGENTS.md",
-      "llm-handoff/manifest.json",
+      "ecosystem.json",
+      "mcp.json",
       "docs/STANDALONE_PORTABILITY.md",
-      "docs/SDK_HUB.md",
-      "src/integrations.ts",
-      "src/sdk-hub.ts",
-      "src/spend.ts",
-      ".env.example"
+      "docs/REAL_ORCHESTRATION.md",
+      "llm-handoff/manifest.json",
+      "llm-handoff/agent-config.json"
     ]
   }
 }
