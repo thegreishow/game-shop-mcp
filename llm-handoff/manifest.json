@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "project": "game-shop-mcp",
+  "architecture": {
+    "principle": "Game Shop orchestrates providers but direct provider access must remain possible.",
+    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime"],
+    "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
+    "paidGenerationDefault": "blocked",
+    "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION"
+  },
+  "canonicalFiles": [
+    "AGENTS.md",
+    "docs/STANDALONE_PORTABILITY.md",
+    "docs/SDK_HUB.md",
+    "src/integrations.ts",
+    "src/sdk-hub.ts",
+    "src/external-engines.ts",
+    "src/spend.ts",
+    ".env.example"
+  ],
+  "sdkHubPhase1": {
+    "status": "active",
+    "providers": [
+      {
+        "id": "replicate",
+        "package": "replicate",
+        "env": ["REPLICATE_API_TOKEN"],
+        "authStatus": "deferred-provider-auth-issue",
+        "generation": true
+      },
+      {
+        "id": "fal",
+        "package": "@fal-ai/client",
+        "env": ["FAL_KEY"],
+        "authStatus": "configured-not-live-verified",
+        "generation": true
+      },
+      {
+        "id": "elevenlabs",
+        "package": "@elevenlabs/elevenlabs-js",
+        "env": ["ELEVENLABS_API_KEY"],
+        "authStatus": "ready",
+        "generation": true
+      },
+      {
+        "id": "scenario",
+        "package": "@scenario-labs/sdk",
+        "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"],
+        "authStatus": "sdk-installed-api-deferred",
+        "generation": true
+      },
+      {
+        "id": "cloudinary",
+        "package": "cloudinary",
+        "env": ["CLOUDINARY_URL"],
+        "authStatus": "configured-not-mutated",
+        "generation": false
+      }
+    ]
+  },
+  "notableStandaloneStatus": {
+    "autosprite": "configured-local-and-vercel",
+    "contextcore": "local-runtime-repair-in-progress-or-recently-repaired",
+    "kibo": "vendor-blocked-http-500",
+    "spline": "local-app-required",
+    "wangp": "local-runtime-deferred",
+    "ludo": "auth-deferred",
+    "scenarioApi": "auth-deferred"
+  },
+  "handoff": {
+    "command": "npm run handoff:llm",
+    "output": "dist/llm-handoff",
+    "targetAgents": ["Grok", "Grokbot", "Claude", "Gemini", "Codex", "other coding agents"],
+    "readOrder": [
+      "AGENTS.md",
+      "llm-handoff/manifest.json",
+      "docs/STANDALONE_PORTABILITY.md",
+      "docs/SDK_HUB.md",
+      "src/integrations.ts",
+      "src/sdk-hub.ts",
+      "src/spend.ts",
+      ".env.example"
+    ]
+  }
+}
