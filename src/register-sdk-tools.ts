@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { backendAdapterStatus } from "./backend-adapters.js";
+import { backendReadOperationCatalog, executeBackendReadOperation } from "./backend-reads.js";
 import { publicErrorMessage } from "./errors.js";
 import { providerAdapterRegistry } from "./provider-adapters-v2.js";
 import { providerHealthSummary } from "./provider-health-v2.js";
@@ -95,6 +96,17 @@ const routeInput = z.object({
   name: z.string().max(300).optional(),
   targetPath: z.string().max(500).optional(),
 });
+const backendReadOperation = z.enum([
+  "supabase.storage.list-buckets",
+  "stripe.account.retrieve",
+  "stripe.products.list",
+  "openai.models.list",
+  "clerk.users.list",
+  "clerk.organizations.list",
+  "igdb.games.search",
+  "firebase.auth.list-users",
+  "firebase.firestore.list-collections",
+]);
 
 export function registerSdkTools(server: any) {
   server.registerTool(
@@ -110,6 +122,33 @@ export function registerSdkTools(server: any) {
       adapters: providerAdapterRegistry(),
       backendAdapters: backendAdapterStatus(),
     })),
+  );
+
+  server.registerTool(
+    "gameshop_backend_read_catalog",
+    {
+      title: "Backend Read Catalog",
+      description: "List explicitly allowlisted read-only backend operations for Supabase, Stripe, OpenAI, Clerk, IGDB and Firebase Admin without calling any provider.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    safe(async () => ({ operations: backendReadOperationCatalog(), externalExecutionEnabled: process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS === "true" })),
+  );
+
+  server.registerTool(
+    "gameshop_backend_read",
+    {
+      title: "Execute Backend Read",
+      description: "Execute one allowlisted read-only backend operation. Requires execute=true, configured provider credentials and GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true. No writes are available through this tool.",
+      inputSchema: z.object({
+        operation: backendReadOperation,
+        query: z.string().min(1).max(200).optional(),
+        limit: z.number().int().min(1).max(25).optional(),
+        execute: z.literal(true),
+      }),
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    },
+    safe(executeBackendReadOperation),
   );
 
   server.registerTool(
