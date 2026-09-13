@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
-import { createAuthorizationCode, createDynamicClient, exchangeAuthorizationCode, oauthMetadata, ownerSecretMatches, protectedResourceMetadata, refreshAccessToken, validateOAuthClient, verifyAccessToken } from "../src/oauth.js";
+import { createAuthorizationCode, createDynamicClient, createDynamicClientFromMetadata, exchangeAuthorizationCode, oauthMetadata, ownerSecretMatches, protectedResourceMetadata, refreshAccessToken, validateOAuthClient, verifyAccessToken } from "../src/oauth.js";
 import { authorizeMcpToolRequest, authorizeRequest, requiredScopesForTool } from "../src/security.js";
 
 process.env.GAME_SHOP_OAUTH_SIGNING_SECRET="test-signing-secret-32-bytes-minimum-value";
@@ -47,6 +47,26 @@ assert.equal(dynamic.token_endpoint_auth_method,"none");
 assert.ok(dynamic.grant_types.includes("refresh_token"));
 assert.equal(validateOAuthClient(dynamic.client_id,chatgptRedirect,issuer),true);
 assert.equal(validateOAuthClient(dynamic.client_id,"https://example.com/callback",issuer),false);
+
+const openAiDcr=createDynamicClientFromMetadata({issuer,metadata:{
+  client_name:"ChatGPT",
+  application_type:"web",
+  redirect_uris:["https://chatgpt.com/oauth/callback"],
+  grant_types:["authorization_code","refresh_token"],
+  response_types:["code"],
+  token_endpoint_auth_method:"none",
+  scope:"gameshop.read gameshop.qa offline_access",
+  contacts:["security@openai.com"],
+  logo_uri:"https://chatgpt.com/favicon.ico"
+}});
+assert.equal(openAiDcr.redirect_uris[0],"https://chatgpt.com/oauth/callback");
+assert.equal(validateOAuthClient(openAiDcr.client_id,"https://chatgpt.com/oauth/callback",issuer),true);
+
+const singularRedirect=createDynamicClientFromMetadata({issuer,metadata:{redirect_uri:"https://chat.openai.com/oauth/callback",token_endpoint_auth_method:"none"}});
+assert.equal(singularRedirect.redirect_uris[0],"https://chat.openai.com/oauth/callback");
+assert.equal(validateOAuthClient(singularRedirect.client_id,"https://chat.openai.com/oauth/callback",issuer),true);
+assert.throws(()=>createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],token_endpoint_auth_method:"client_secret_basic"}}),/public OAuth clients/);
+assert.throws(()=>createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],grant_types:["client_credentials"]}}),/Unsupported OAuth grant type/);
 const dynamicVerifier=randomBytes(32).toString("base64url");
 const dynamicChallenge=createHash("sha256").update(dynamicVerifier).digest("base64url");
 const dynamicCode=createAuthorizationCode({issuer,clientId:dynamic.client_id,redirectUri:chatgptRedirect,scope:"gameshop.read offline_access",codeChallenge:dynamicChallenge});
