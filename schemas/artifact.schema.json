@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://game-shop-mcp/schema/artifact.schema.json",
+  "title": "Game Shop Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifactId", "executionId", "kind", "purpose", "status", "name", "metadata", "createdAt", "updatedAt"],
+  "properties": {
+    "artifactId": { "type": "string", "minLength": 8 },
+    "executionId": { "type": "string", "minLength": 8 },
+    "projectId": { "type": "string" },
+    "kind": {
+      "enum": ["image", "sprite", "spritesheet", "3d", "video", "audio", "rive", "document", "code", "archive", "data", "other"]
+    },
+    "purpose": {
+      "enum": ["game", "website", "web-app", "mobile-app", "desktop-app", "api-service", "agent", "automation", "interactive-experience", "digital-product", "media-project", "media", "commerce", "general", "other"]
+    },
+    "status": { "enum": ["pending", "ready", "failed", "archived"] },
+    "name": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string" },
+    "providerJobId": { "type": "string" },
+    "mimeType": { "type": "string" },
+    "sourceUrl": { "type": "string", "format": "uri" },
+    "storageUrl": { "type": "string", "format": "uri" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "providerResponse": {},
+        "providerStatus": {},
+        "normalized": {},
+        "orchestration": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "targetPath": { "type": "string" },
+            "state": {
+              "enum": ["waiting", "persisting", "persisted", "placing", "placed", "verifying", "previewing", "browser_qa", "repair_required", "completed", "failed"]
+            }
+          }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}
