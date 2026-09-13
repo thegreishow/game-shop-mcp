@@ -56,6 +56,10 @@ const DEFAULT_OPERATION: Record<Phase2ProviderId, string> = {
   cloudinary: "upload",
 };
 
+function externalExecutionAllowed() {
+  return process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS === "true";
+}
+
 function capabilitySupported(provider: Phase2ProviderId, capability: RealOrchestrationCapability) {
   return PHASE2_ADAPTERS[provider].capabilities.includes(capability);
 }
@@ -94,6 +98,8 @@ export function realOrchestrationPlan(request: RealOrchestrationRequest) {
   return {
     capability: request.capability,
     executeRequested: request.execute === true,
+    externalExecutionAllowed: externalExecutionAllowed(),
+    externalExecutionGate: "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true",
     spend: spendPolicy(),
     selected: candidates.find((candidate) => candidate.eligible) ?? null,
     candidates,
@@ -118,6 +124,13 @@ function artifactContext(request: RealOrchestrationRequest) {
 export async function orchestrateProviderCapability(request: RealOrchestrationRequest) {
   const plan = realOrchestrationPlan(request);
   if (!request.execute) return { mode: "plan" as const, plan };
+  if (!externalExecutionAllowed()) {
+    return {
+      mode: "blocked" as const,
+      plan,
+      error: "External provider execution is disabled. Set GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true to permit live SDK/API calls.",
+    };
+  }
   if (!plan.selected) {
     return {
       mode: "blocked" as const,
@@ -188,6 +201,9 @@ export async function continueProviderTask(input: {
   operation: string;
   payload: Record<string, unknown>;
 }) {
+  if (!externalExecutionAllowed()) {
+    throw new Error("External provider execution is disabled. Set GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true to poll live provider jobs.");
+  }
   return pollProviderTask(input);
 }
 
@@ -198,6 +214,8 @@ export function realOrchestrationInfo() {
     priority: BASE_PRIORITY,
     adapters: Object.values(PHASE2_ADAPTERS),
     safety: {
+      externalExecutionAllowed: externalExecutionAllowed(),
+      externalExecutionGate: "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true",
       paidGeneration: spendPolicy(),
       fallback: "pre-submit routing only; no automatic duplicate generation after uncertain provider errors",
       secrets: "environment-only; never returned by orchestration APIs",
