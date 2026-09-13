@@ -20,8 +20,33 @@ export function spendPolicy() {
     allowPaidGeneration: allowPaid,
     money: allowPaid ? "opted-in" : "blocked",
     rule: "Any provider operation that can create a billable generation job must call assertPaidGenerationAllowed() immediately before the provider request.",
-    paidGenerationActions: ["autosprite.createCharacter", "autosprite.generateAnimations", "spritecook.generate"],
-    unaffectedCapabilities: ["routing", "planning", "catalogs", "provider-status", "project-context", "github-read"],
-    separateWriteLock: "GitHub writes are controlled independently by GAME_SHOP_ALLOW_GITHUB_WRITES.",
+    fallbackRule: "Do not automatically resubmit an ambiguous provider generation failure to another vendor; verify whether the first job exists before retrying to avoid duplicate spend.",
+    paidGenerationActions: [
+      "autosprite.createCharacter",
+      "autosprite.generateAnimations",
+      "spritecook.generate",
+      "meshy.textTo3D",
+      "fal.inference",
+      "replicate.prediction",
+      "ludo.generation",
+      "elevenlabs.speech",
+      "scenario.generation",
+      "SDK replicate:*",
+      "SDK fal:*",
+      "SDK elevenlabs:*",
+      "SDK scenario:*"
+    ],
+    nonGenerationMutations: [
+      "cloudinary.upload",
+      "artifact.persist",
+      "artifact.place",
+      "github.patch",
+      "preview.deploy"
+    ],
+    unaffectedCapabilities: ["routing", "planning", "catalogs", "provider-status", "provider-health", "sdk-status", "project-context", "github-read", "artifact-read"],
+    separateWriteLocks: {
+      github: "GAME_SHOP_ALLOW_GITHUB_WRITES",
+      externalIntegrations: "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS"
+    }
   } as const;
 }
