@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -15,10 +15,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Vercel deployment policy
@@ -33,3 +36,32 @@ jobs:
         run: npm run test:oauth
       - name: Adversarial security tests
         run: npm run test:security
+      - name: SDK Hub Phase 2 smoke
+        run: npm run test:sdk-hub
+      - name: Provider health smoke
+        run: npm run test:provider-health
+      - name: Generate machine-readable ecosystem snapshots
+        run: npm run snapshot:ecosystem
+      - name: Validate generated JSON
+        run: node -e 'JSON.parse(require("fs").readFileSync("ecosystem.json","utf8")); JSON.parse(require("fs").readFileSync("mcp.json","utf8")); console.log("snapshot JSON valid")'
+      - name: Upload generated ecosystem snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecosystem-snapshots
+          path: |
+            ecosystem.json
+            mcp.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Commit refreshed snapshots to same-repo PR branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git add ecosystem.json mcp.json
+          if git diff --cached --quiet; then
+            echo "Snapshots already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh generated ecosystem snapshots"
+          git push origin HEAD:${{ github.head_ref }}
