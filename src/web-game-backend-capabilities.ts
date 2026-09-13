@@ -49,7 +49,7 @@ const capabilities: WebGameCapability[] = [
     packageName: "firebase",
     install: "npm install firebase",
     capabilities: ["auth", "firestore", "storage", "functions", "app-check"],
-    notes: "Use the modular Firebase SDK in generated target apps. Add an admin/server adapter separately if Game Shop needs privileged Firebase operations.",
+    notes: "Keep the modular Firebase web SDK project-scoped. Game Shop should only gain privileged Firebase server access through the separate firebase-admin package and an explicitly gated admin adapter.",
   },
   {
     id: "clerk-backend",
@@ -59,7 +59,7 @@ const capabilities: WebGameCapability[] = [
     install: "npm install @clerk/backend",
     env: ["CLERK_SECRET_KEY"],
     capabilities: ["authentication", "users", "organizations", "sessions"],
-    notes: "Current general Node backend package. Do not install deprecated @clerk/clerk-sdk-node; Express projects may instead use @clerk/express.",
+    notes: "Current general Node backend package. Wired through createClerkClient({ secretKey }); do not install deprecated @clerk/clerk-sdk-node.",
   },
   {
     id: "lootlocker-rest",
@@ -73,9 +73,11 @@ const capabilities: WebGameCapability[] = [
     id: "igdb-api",
     name: "IGDB API",
     placement: "optional-adapter",
+    packageName: "igdb-api-node",
+    install: "npm install igdb-api-node",
     env: ["IGDB_CLIENT_ID", "IGDB_ACCESS_TOKEN"],
     capabilities: ["game-metadata", "covers", "companies", "genres", "release-dates", "search"],
-    notes: "Provider/API integration candidate. Keep third-party npm wrappers out of core until the adapter contract is verified against the official API.",
+    notes: "Wired through the Twitch-maintained igdb-api-node wrapper using Client ID + App Access Token. Keep credentials server-side and treat the integration as read-oriented metadata access.",
   },
   {
     id: "react-query",
