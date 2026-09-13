@@ -1,12 +1,10 @@
 import { integrationRegistry, integrationStatus, type Integration } from "./integrations.js";
 import { assertPaidGenerationAllowed } from "./spend.js";
+import { integrationOperationPolicyInfo, resolveIntegrationOperation } from "./integration-policy.js";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_RESPONSE_CHARS = 250_000;
 const MCP_PROTOCOL_PREFERENCE=["2026-07-28","2025-11-25","2025-03-26"] as const;
-const BILLABLE_INTEGRATIONS = new Set([
-  "motion-so", "ludo-ai", "meshy", "fal-ai", "replicate", "elevenlabs", "scenario", "logoai-api", "raylight-mcp", "manus-api",
-]);
 
 export type IntegrationInvokeInput = {
   id: string;
@@ -62,7 +60,7 @@ export function integrationReadiness(id?: string) {
       callableNow: remotelyCallable && externalAllowed(),
       capabilities: integration.capabilities,
       note: remotelyCallable
-        ? (externalAllowed() ? "Ready for live Game Shop invocation." : "Credentials are available, but live external calls are locked by GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS.")
+        ? (externalAllowed() ? "Ready for policy-allowlisted live Game Shop invocation." : "Credentials are available, but live external calls are locked by GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS.")
         : mode === "desktop-mcp" || mode === "stdio-mcp"
           ? "Requires a local/desktop MCP host; the cloud Game Shop runtime cannot spawn it."
           : mode === "library" || mode === "platform-api" || mode === "installable"
@@ -93,13 +91,6 @@ function assertCallable(integration: Integration) {
   if (!integration.endpoint) throw new Error(`${integration.name} has no remote endpoint registered.`);
   const missing = configuredEnv(integration).filter((entry) => !entry.configured).map((entry) => entry.name);
   if (missing.length) throw new Error(`${integration.name} is missing required environment configuration: ${missing.join(", ")}.`);
-}
-
-function potentialBillable(input: IntegrationInvokeInput, integration: Integration) {
-  if (!BILLABLE_INTEGRATIONS.has(integration.id)) return false;
-  if (input.mode === "api" && (input.method ?? "GET") !== "GET") return true;
-  const operation = `${input.tool ?? ""} ${input.path ?? ""}`.toLowerCase();
-  return /(generate|create|render|prediction|session|speech|music|video|image|audio|3d|animate|task)/.test(operation);
 }
 
 async function fetchJson(url: string, init: RequestInit, timeoutMs: number) {
@@ -163,29 +154,30 @@ export async function invokeIntegration(input: IntegrationInvokeInput) {
   assertCallable(integration);
   const timeoutMs = Math.max(1_000, Math.min(input.timeoutMs ?? DEFAULT_TIMEOUT_MS, 60_000));
   const mode = input.mode ?? (integration.kinds.includes("mcp") ? "mcp-list-tools" : "api");
-  if (potentialBillable({ ...input, mode }, integration)) assertPaidGenerationAllowed(`integration.${integration.id}.${input.tool ?? input.path ?? mode}`);
+  const method = input.method ?? "GET";
+  const operation = resolveIntegrationOperation({ integrationId: integration.id, mode, method, path: input.path, tool: input.tool });
+  if (operation.billing !== "free") assertPaidGenerationAllowed(`integration.${integration.id}.${operation.operation}`);
 
   if (mode === "mcp-list-tools" || mode === "mcp-call") {
     if (!integration.kinds.includes("mcp")) throw new Error(`${integration.name} is not registered as a remote MCP integration.`);
     const initialized = await initializeMcp(integration, timeoutMs);
     if (mode === "mcp-list-tools") {
       const listed = await mcpRpc(integration, "tools/list", {}, initialized.session, 2, timeoutMs);
-      return { integration: integration.id, mode, protocolVersion:initialized.protocolVersion, result: listed.payload.result };
+      return { integration: integration.id, mode, operation: operation.operation, billing: operation.billing, mutation: operation.mutation, protocolVersion:initialized.protocolVersion, result: listed.payload.result };
     }
     if (!input.tool) throw new Error("tool is required for mcp-call.");
     const called = await mcpRpc(integration, "tools/call", { name: input.tool, arguments: input.arguments ?? {} }, initialized.session, 2, timeoutMs);
-    return { integration: integration.id, mode, protocolVersion:initialized.protocolVersion, tool: input.tool, result: called.payload.result };
+    return { integration: integration.id, mode, operation: operation.operation, billing: operation.billing, mutation: operation.mutation, protocolVersion:initialized.protocolVersion, tool: input.tool, result: called.payload.result };
   }
 
   if (!integration.kinds.includes("api")) throw new Error(`${integration.name} is not registered as a REST API integration.`);
-  const method = input.method ?? "GET";
   const path = input.path ?? "";
   if (/^[a-z][a-z\d+.-]*:/i.test(path) || path.includes("..")) throw new Error("API path must be relative to the registered integration endpoint.");
   const url = new URL(path.replace(/^\//, ""), integration.endpoint!.endsWith("/") ? integration.endpoint! : `${integration.endpoint!}/`).toString();
   const headers: Record<string, string> = { accept: "application/json", ...authHeaders(integration) };
   if (input.body !== undefined) headers["content-type"] = "application/json";
   const response = await fetchJson(url, { method, headers, body: input.body === undefined ? undefined : JSON.stringify(input.body) }, timeoutMs);
-  return { integration: integration.id, mode, method, path, response };
+  return { integration: integration.id, mode, operation: operation.operation, billing: operation.billing, mutation: operation.mutation, method, path, response };
 }
 
 export async function orchestrateIntegrations(steps: IntegrationStep[]) {
@@ -204,4 +196,4 @@ export async function orchestrateIntegrations(steps: IntegrationStep[]) {
   return { completed: true, results };
 }
 
-export function integrationRuntimeInfo(){return{externalExecutionEnabled:externalAllowed(),protocolPreference:MCP_PROTOCOL_PREFERENCE,billableIntegrations:[...BILLABLE_INTEGRATIONS],maxResponseChars:MAX_RESPONSE_CHARS,defaultTimeoutMs:DEFAULT_TIMEOUT_MS};}
+export function integrationRuntimeInfo(){return{externalExecutionEnabled:externalAllowed(),protocolPreference:MCP_PROTOCOL_PREFERENCE,operationPolicy:integrationOperationPolicyInfo(),maxResponseChars:MAX_RESPONSE_CHARS,defaultTimeoutMs:DEFAULT_TIMEOUT_MS};}

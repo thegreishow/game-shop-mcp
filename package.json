@@ -1,6 +1,6 @@
 {
   "name": "game-shop-mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:mcp": "tsx scripts/smoke.ts",
     "test:oauth": "tsx scripts/oauth-smoke.ts",
+    "test:security": "tsx scripts/security-adversarial.ts",
     "verify:oauth-live": "tsx scripts/verify-oauth-live.ts",
     "verify:oauth-runtime-live": "tsx scripts/oauth-live-smoke.ts",
     "setup:preline": "bash scripts/setup-preline.sh",
@@ -18,7 +19,7 @@
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
     "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run snapshot:ecosystem",
-    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security"
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.68.0",
