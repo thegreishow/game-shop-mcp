@@ -16,11 +16,12 @@
     "test:sdk-hub": "tsx scripts/sdk-hub-smoke.ts",
     "test:provider-health": "tsx scripts/provider-health-smoke.ts",
     "test:orchestration-v3": "tsx scripts/real-orchestration-phase3-smoke.ts",
+    "test:web-game-capabilities": "tsx scripts/web-game-capabilities-smoke.ts",
     "snapshot:ecosystem": "tsx scripts/generate-ecosystem-snapshot.ts",
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
-    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run snapshot:ecosystem",
-    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3"
+    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run snapshot:ecosystem",
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities"
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.68.0",
