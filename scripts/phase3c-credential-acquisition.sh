@@ -20,7 +20,8 @@ p,n=sys.argv[1:]
 for line in open(p):
     m=re.match(r'^([A-Z0-9_]+)=(.*)$',line.rstrip('\n'))
     if m and m.group(1)==n:
-        print('present' if m.group(2) else '')
+        value=m.group(2)
+        if value and value != '[SENSITIVE]': print('present')
         break
 PY
 )"
@@ -33,6 +34,7 @@ PY
   IFS= read -r -s value || true
   printf '\n'
   [[ -n "${value:-}" ]] || { printf 'SKIP  %s\n' "$name"; return; }
+  [[ "$value" != "[SENSITIVE]" ]] || { printf 'SKIP  %s (Vercel placeholder is not a usable secret)\n' "$name"; return; }
   VALUE="$value" python3 - "$ENV_FILE" "$name" <<'PY'
 import os,re,sys,tempfile
 p,n=sys.argv[1:]; v=os.environ['VALUE']
@@ -120,8 +122,11 @@ set_value DAISYUI_BLUEPRINT_EMAIL "daisyUI Blueprint account email"
 cat <<'EOF'
 
 -- Group D: Game Shop-specific/direct gateway auth --
+Game Shop's server expects GAME_SHOP_MCP_TOKEN. If a production token already exists only
+as a Vercel Secret, Vercel cannot reveal it later; press Enter unless you intentionally know
+or are rotating the plaintext token. Never paste the literal [SENSITIVE] placeholder.
 EOF
-set_value MCP_BEARER_TOKEN "Direct Game Shop MCP bearer token (only if you already created one for your deployment)"
+set_value GAME_SHOP_MCP_TOKEN "Direct Game Shop MCP gateway token (only if you know the plaintext token or are intentionally rotating it)"
 
 cat <<'EOF'
 
@@ -133,7 +138,8 @@ EOF
 set_value AUTOSPRITE_API_KEY "AutoSprite API key (existing account only)"
 set_value SPRITECOOK_API_KEY "SpriteCook API key (existing account only)"
 
-# Normalize intentional aliases after entry.
+# Normalize intentional aliases after entry. MCP_BEARER_TOKEN is migrated only when a legacy
+# local plaintext value exists; GAME_SHOP_MCP_TOKEN remains the canonical server variable.
 set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
@@ -147,12 +153,17 @@ for i,l in enumerate(lines):
 pairs=[('MOTION_SO_API_KEY','MOTION_API_KEY'),('PRELINE_API_KEY','PRELINE_MCP_TOKEN')]
 for a,b in pairs:
     av,bv=vals.get(a,''),vals.get(b,'')
-    if av and not bv:
+    if av and av!='[SENSITIVE]' and not bv:
         if b in pos: lines[pos[b]]=f'{b}={av}'
         else: lines.append(f'{b}={av}')
-    elif bv and not av:
+    elif bv and bv!='[SENSITIVE]' and not av:
         if a in pos: lines[pos[a]]=f'{a}={bv}'
         else: lines.append(f'{a}={bv}')
+legacy=vals.get('MCP_BEARER_TOKEN','')
+canonical=vals.get('GAME_SHOP_MCP_TOKEN','')
+if legacy and legacy!='[SENSITIVE]' and not canonical:
+    if 'GAME_SHOP_MCP_TOKEN' in pos: lines[pos['GAME_SHOP_MCP_TOKEN']]=f'GAME_SHOP_MCP_TOKEN={legacy}'
+    else: lines.append(f'GAME_SHOP_MCP_TOKEN={legacy}')
 fd,tmp=tempfile.mkstemp(dir=os.path.dirname(p),prefix='.providers.',text=True)
 with os.fdopen(fd,'w') as f:f.write('\n'.join(lines)+'\n')
 os.chmod(tmp,0o600); os.replace(tmp,p)
@@ -163,7 +174,7 @@ set -a
 source "$ENV_FILE"
 set +a
 
-vars=(REPLICATE_API_TOKEN ELEVENLABS_API_KEY DEEPSEEK_API_KEY MESHY_API_KEY FAL_KEY MANUS_API_KEY MOTION_SO_API_KEY LUDO_API_KEY PODIUM_API_KEY AIMLAPI_API_KEY SCENARIO_API_KEY SCENARIO_API_SECRET CLOUDINARY_URL PRELINE_MCP_TOKEN SPRIXEN_API_KEY GAMELABS_API_KEY MOTION_API_KEY DAISYUI_BLUEPRINT_LICENSE DAISYUI_BLUEPRINT_EMAIL MCP_BEARER_TOKEN AUTOSPRITE_API_KEY SPRITECOOK_API_KEY)
+vars=(REPLICATE_API_TOKEN ELEVENLABS_API_KEY DEEPSEEK_API_KEY MESHY_API_KEY FAL_KEY MANUS_API_KEY MOTION_SO_API_KEY LUDO_API_KEY PODIUM_API_KEY AIMLAPI_API_KEY SCENARIO_API_KEY SCENARIO_API_SECRET CLOUDINARY_URL PRELINE_MCP_TOKEN SPRIXEN_API_KEY GAMELABS_API_KEY MOTION_API_KEY DAISYUI_BLUEPRINT_LICENSE DAISYUI_BLUEPRINT_EMAIL GAME_SHOP_MCP_TOKEN AUTOSPRITE_API_KEY SPRITECOOK_API_KEY)
 {
   echo '# Phase 3C credential acquisition status'
   echo
@@ -172,7 +183,7 @@ vars=(REPLICATE_API_TOKEN ELEVENLABS_API_KEY DEEPSEEK_API_KEY MESHY_API_KEY FAL_
   echo '| Variable | Status |'
   echo '|---|---|'
   for n in "${vars[@]}"; do
-    if [[ -n "${!n:-}" ]]; then echo "| $n | configured |"; else echo "| $n | missing/skipped |"; fi
+    if [[ -n "${!n:-}" && "${!n}" != "[SENSITIVE]" ]]; then echo "| $n | configured |"; else echo "| $n | missing/skipped |"; fi
   done
   echo
   echo 'No secret values are printed.'
