@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 24
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Vercel deployment policy
         run: node scripts/check-vercel-deployment-policy.mjs
       - name: Vercel function budget
@@ -42,6 +42,8 @@ jobs:
         run: npm run test:provider-health
       - name: Real Orchestration Phase 3 smoke
         run: npm run test:orchestration-v3
+      - name: Web/game backend capability smoke
+        run: npm run test:web-game-capabilities
       - name: Generate machine-readable ecosystem snapshots
         run: npm run snapshot:ecosystem
       - name: Validate generated JSON
