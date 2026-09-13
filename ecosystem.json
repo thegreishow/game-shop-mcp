@@ -3432,7 +3432,7 @@
     ]
   },
   "orchestration": {
-    "version": 2,
+    "version": 3,
     "capabilities": [
       "model-inference",
       "image-generation",
@@ -3588,6 +3588,44 @@
         "notes": "Official Cloudinary Node SDK handles artifact upload and delivery. Upload is a mutation but is not a model-generation action."
       }
     ],
+    "learning": {
+      "mode": "adaptive-health-routing",
+      "inputs": [
+        "success-rate",
+        "latency",
+        "consecutive-failures",
+        "pipeline-QA-outcomes",
+        "recency"
+      ],
+      "circuitBreaker": {
+        "consecutiveFailures": 3,
+        "cooldownMs": 600000,
+        "states": [
+          "closed",
+          "half-open",
+          "open"
+        ]
+      },
+      "persistence": "game_shop_events when Supabase is configured; process-memory fallback otherwise",
+      "spendSafety": "routing learns only from observed results; it never bypasses external-execution or paid-generation gates"
+    },
+    "autonomousPipeline": {
+      "stages": [
+        "adaptive-route",
+        "provider-submit",
+        "bounded-poll",
+        "artifact-finalize",
+        "persist",
+        "project-place",
+        "verify",
+        "preview",
+        "browser-qa",
+        "safe-retry-or-repair-gate"
+      ],
+      "immediatePollsMax": 5,
+      "scheduledContinuation": "provider reconciler worker continues non-terminal jobs",
+      "repairPolicy": "transient preview/QA retries may be automatic; code mutation remains write-gated and evidence-driven"
+    },
     "safety": {
       "externalExecutionAllowed": false,
       "externalExecutionGate": "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS=true",
@@ -3635,7 +3673,7 @@
           "externalIntegrations": "GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS"
         }
       },
-      "fallback": "pre-submit routing only; no automatic duplicate generation after uncertain provider errors",
+      "fallback": "adaptive pre-submit routing only; no automatic duplicate generation after uncertain provider errors",
       "secrets": "environment-only; never returned by orchestration APIs"
     }
   },

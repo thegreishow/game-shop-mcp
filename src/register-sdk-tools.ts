@@ -2,11 +2,13 @@ import { z } from "zod";
 import { publicErrorMessage } from "./errors.js";
 import { providerAdapterRegistry } from "./provider-adapters-v2.js";
 import { providerHealthSummary } from "./provider-health-v2.js";
+import { providerLearningInfo, providerPerformanceSnapshot } from "./provider-performance.js";
 import {
   continueProviderTask,
   orchestrateProviderCapability,
   realOrchestrationInfo,
   realOrchestrationPlan,
+  runAutonomousProviderPipeline,
 } from "./real-orchestration.js";
 import { sdkHubStatus } from "./sdk-hub.js";
 
@@ -109,7 +111,7 @@ export function registerSdkTools(server: any) {
     "gameshop_provider_health",
     {
       title: "Provider Health",
-      description: "Rank provider readiness from versioned capability, auth, blocker and adapter metadata. This is local/read-only health, not a paid request.",
+      description: "Inspect static provider readiness from capability, auth, blocker and adapter metadata. This is local/read-only health, not a paid request.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
@@ -117,10 +119,24 @@ export function registerSdkTools(server: any) {
   );
 
   server.registerTool(
+    "gameshop_provider_performance",
+    {
+      title: "Provider Performance",
+      description: "Inspect learned success rate, latency, QA outcomes, score adjustments and circuit-breaker state for Phase 3 routing.",
+      inputSchema: z.object({ providers: z.array(provider).max(5).optional() }),
+      annotations: { readOnlyHint: true },
+    },
+    safe(async (input: any) => ({
+      learning: providerLearningInfo(),
+      providers: await providerPerformanceSnapshot(input.providers?.length ? input.providers : ["fal", "replicate", "elevenlabs", "scenario", "cloudinary"]),
+    })),
+  );
+
+  server.registerTool(
     "gameshop_real_orchestration_info",
     {
       title: "Real Orchestration Info",
-      description: "Describe the Phase 2 provider routing, fallback and spend-safety contract.",
+      description: "Describe adaptive provider routing, autonomous continuation, fallback and spend-safety contracts.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
@@ -131,7 +147,7 @@ export function registerSdkTools(server: any) {
     "gameshop_plan_provider_task",
     {
       title: "Plan Provider Task",
-      description: "Select and rank real SDK/API adapters for a capability without invoking any provider.",
+      description: "Select and rank SDK/API adapters using static health plus learned latency/success/QA performance without invoking any provider.",
       inputSchema: routeInput,
       annotations: { readOnlyHint: true },
     },
@@ -143,7 +159,7 @@ export function registerSdkTools(server: any) {
     {
       title: "Run Provider Task",
       description:
-        "Route and invoke one real provider adapter. Paid generation remains blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true. Automatic post-submit fallback is intentionally disabled to prevent duplicate spend.",
+        "Adaptively route and invoke one provider adapter. Paid generation remains blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true. Automatic cross-provider post-submit fallback stays disabled to prevent duplicate spend.",
       inputSchema: routeInput.extend({ execute: z.literal(true) }),
       annotations: { readOnlyHint: false, openWorldHint: true },
     },
@@ -151,14 +167,33 @@ export function registerSdkTools(server: any) {
   );
 
   server.registerTool(
+    "gameshop_run_autonomous_pipeline",
+    {
+      title: "Run Autonomous Provider Pipeline",
+      description:
+        "Run adaptive route → provider submit → bounded polling → artifact finalization → project placement → preview → QA. Transient preview retries are automatic; code repair remains evidence-driven and write-gated.",
+      inputSchema: routeInput.extend({
+        execute: z.literal(true),
+        maxPolls: z.number().int().min(1).max(5).optional(),
+        pollIntervalMs: z.number().int().min(250).max(5000).optional(),
+      }),
+      annotations: { readOnlyHint: false, openWorldHint: true },
+    },
+    safe(async (input: any) => runAutonomousProviderPipeline(input)),
+  );
+
+  server.registerTool(
     "gameshop_continue_provider_task",
     {
       title: "Continue Provider Task",
-      description: "Poll or finalize a previously submitted fal, Replicate or ElevenLabs provider job.",
+      description: "Poll or finalize a previously submitted fal, Replicate or ElevenLabs provider job while recording real performance telemetry.",
       inputSchema: z.object({
         provider: z.enum(["fal", "replicate", "elevenlabs"]),
         operation: z.string().min(1).max(80),
         payload: z.record(z.string(), z.unknown()),
+        executionId: z.string().min(8).max(100).optional(),
+        projectId: z.string().max(100).optional(),
+        capability: z.string().max(100).optional(),
       }),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
