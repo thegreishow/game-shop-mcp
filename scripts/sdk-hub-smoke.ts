@@ -25,7 +25,7 @@ if (delivery !== "cloudinary") throw new Error(`Expected Cloudinary for media de
 const speech = routeSdkCapability("speech-generation", { requireConfigured: false });
 if (speech !== "elevenlabs") throw new Error(`Expected ElevenLabs for speech, got ${speech}.`);
 
-const plan = realOrchestrationPlan({
+const plan = await realOrchestrationPlan({
   capability: "image-generation",
   execute: false,
   payloads: {
@@ -33,9 +33,10 @@ const plan = realOrchestrationPlan({
     replicate: { version: "example-version", input: { prompt: "smoke-test-only" } }
   }
 });
-if (plan.fallbackPolicy !== "route-before-submit-only") throw new Error("Unexpected fallback policy.");
+if (plan.fallbackPolicy !== "adaptive-route-before-submit-only") throw new Error("Unexpected fallback policy.");
+if (!plan.learning || plan.learning.mode !== "adaptive-health-routing") throw new Error("Adaptive learning metadata missing.");
 
-console.log("SDK Hub Phase 2 smoke: OK");
+console.log("SDK Hub Phase 3 routing smoke: OK");
 console.log(`providers=${status.length}`);
 console.log(`adapters=${adapters.length}`);
 console.log(`externalExecutionAllowed=${plan.externalExecutionAllowed}`);
