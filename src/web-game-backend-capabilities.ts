@@ -49,7 +49,17 @@ const capabilities: WebGameCapability[] = [
     packageName: "firebase",
     install: "npm install firebase",
     capabilities: ["auth", "firestore", "storage", "functions", "app-check"],
-    notes: "Keep the modular Firebase web SDK project-scoped. Game Shop should only gain privileged Firebase server access through the separate firebase-admin package and an explicitly gated admin adapter.",
+    notes: "Keep the modular Firebase web SDK project-scoped. Privileged Game Shop access uses the separate firebase-admin server adapter.",
+  },
+  {
+    id: "firebase-admin",
+    name: "Firebase Admin Node SDK",
+    placement: "core-adapter",
+    packageName: "firebase-admin",
+    install: "npm install firebase-admin@^13.10.0",
+    env: ["FIREBASE_SERVICE_ACCOUNT_JSON"],
+    capabilities: ["authentication", "users", "firestore", "storage", "messaging", "realtime-database"],
+    notes: "Privileged server-only Firebase adapter. Uses firebase-admin 13.x to preserve the existing Node >=20 runtime floor; never expose service-account JSON to generated clients.",
   },
   {
     id: "clerk-backend",
