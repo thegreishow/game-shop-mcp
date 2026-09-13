@@ -26,4 +26,4 @@ jobs:
             -H "content-type: application/json" \
             -H "x-game-shop-worker-secret: $GAME_SHOP_WORKER_SECRET" \
             -d '{"healthLimit":12}' \
-            https://game-shop-mcp.vercel.app/api/autonomy-sweep
+            'https://game-shop-mcp.vercel.app/api/worker?action=autonomy'
