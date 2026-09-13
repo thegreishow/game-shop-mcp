@@ -60,13 +60,28 @@ const openAiDcr=createDynamicClientFromMetadata({issuer,metadata:{
   logo_uri:"https://chatgpt.com/favicon.ico"
 }});
 assert.equal(openAiDcr.redirect_uris[0],"https://chatgpt.com/oauth/callback");
+assert.equal(openAiDcr.client_name,"ChatGPT");
+assert.match(openAiDcr.scope||"",/offline_access/);
 assert.equal(validateOAuthClient(openAiDcr.client_id,"https://chatgpt.com/oauth/callback",issuer),true);
 
 const singularRedirect=createDynamicClientFromMetadata({issuer,metadata:{redirect_uri:"https://chat.openai.com/oauth/callback",token_endpoint_auth_method:"none"}});
 assert.equal(singularRedirect.redirect_uris[0],"https://chat.openai.com/oauth/callback");
 assert.equal(validateOAuthClient(singularRedirect.client_id,"https://chat.openai.com/oauth/callback",issuer),true);
-assert.throws(()=>createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],token_endpoint_auth_method:"client_secret_basic"}}),/public OAuth clients/);
-assert.throws(()=>createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],grant_types:["client_credentials"]}}),/Unsupported OAuth grant type/);
+
+const stringRedirectList=createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:"https://chatgpt.com/connector/oauth/test-callback"}});
+assert.equal(stringRedirectList.redirect_uris[0],"https://chatgpt.com/connector/oauth/test-callback");
+
+const loopbackClient=createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["http://127.0.0.1:43123/oauth/callback"]}});
+assert.equal(validateOAuthClient(loopbackClient.client_id,"http://127.0.0.1:43123/oauth/callback",issuer),true);
+const customSchemeClient=createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["chatgpt://oauth/callback"]}});
+assert.equal(validateOAuthClient(customSchemeClient.client_id,"chatgpt://oauth/callback",issuer),true);
+
+const normalizedAuthMethod=createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],token_endpoint_auth_method:"client_secret_basic"}});
+assert.equal(normalizedAuthMethod.token_endpoint_auth_method,"none");
+const normalizedGrantTypes=createDynamicClientFromMetadata({issuer,metadata:{redirect_uris:["https://chatgpt.com/oauth/callback"],grant_types:["authorization_code","refresh_token","client_credentials"],response_types:["code","token"]}});
+assert.deepEqual(normalizedGrantTypes.grant_types,["authorization_code","refresh_token"]);
+assert.deepEqual(normalizedGrantTypes.response_types,["code"]);
+
 const dynamicVerifier=randomBytes(32).toString("base64url");
 const dynamicChallenge=createHash("sha256").update(dynamicVerifier).digest("base64url");
 const dynamicCode=createAuthorizationCode({issuer,clientId:dynamic.client_id,redirectUri:chatgptRedirect,scope:"gameshop.read offline_access",codeChallenge:dynamicChallenge});
@@ -88,4 +103,4 @@ const writeScoped=await authorizeMcpToolRequest(writeRequest,writeAuth);
 assert.equal(writeScoped.ok,false,"read+qa token must not authorize write tools");
 if(!writeScoped.ok){assert.equal(writeScoped.status,403);assert.deepEqual(writeScoped.requiredScopes,["gameshop.write"]);}
 
-console.log("OAuth PKCE + refresh token + dynamic client + tool-scope smoke OK");
+console.log("OAuth PKCE + refresh token + tolerant dynamic client + tool-scope smoke OK");
