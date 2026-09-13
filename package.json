@@ -13,6 +13,7 @@
     "setup:preline": "bash scripts/setup-preline.sh",
     "setup:sdk-hub": "bash scripts/setup-sdk-hub.sh",
     "test:sdk-hub": "tsx scripts/sdk-hub-smoke.ts",
+    "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "test": "npm run typecheck && npm run test:mcp && npm run test:oauth"
   },
   "dependencies": {
