@@ -1,4 +1,4 @@
-export type BackendAdapterId = "supabase" | "stripe" | "openai";
+export type BackendAdapterId = "supabase" | "stripe" | "openai" | "clerk" | "igdb";
 
 export type BackendAdapterDefinition = {
   id: BackendAdapterId;
@@ -33,6 +33,22 @@ export const BACKEND_ADAPTERS: Record<BackendAdapterId, BackendAdapterDefinition
     env: ["OPENAI_API_KEY"],
     capabilities: ["model-inference", "responses", "embeddings", "tool-calling"],
     notes: "Optional direct OpenAI adapter. Core Game Shop orchestration remains provider-neutral.",
+  },
+  clerk: {
+    id: "clerk",
+    packageName: "@clerk/backend",
+    version: "^3.17.2",
+    env: ["CLERK_SECRET_KEY"],
+    capabilities: ["authentication", "users", "organizations", "sessions", "backend-api"],
+    notes: "Clerk backend client created with createClerkClient({ secretKey }). Secret key remains server-only.",
+  },
+  igdb: {
+    id: "igdb",
+    packageName: "igdb-api-node",
+    version: "^6.0.5",
+    env: ["IGDB_CLIENT_ID", "IGDB_ACCESS_TOKEN"],
+    capabilities: ["game-metadata", "covers", "companies", "genres", "release-dates", "search"],
+    notes: "IGDB Node wrapper using Twitch Client ID + App Access Token. Read-oriented metadata integration; token remains server-only.",
   },
 };
 
@@ -77,8 +93,20 @@ export async function createBackendClient(id: BackendAdapterId): Promise<unknown
     return new Stripe(requiredSecret("STRIPE_SECRET_KEY"));
   }
 
-  const OpenAI = (await import("openai")).default;
-  return new OpenAI({ apiKey: requiredSecret("OPENAI_API_KEY") });
+  if (id === "openai") {
+    const OpenAI = (await import("openai")).default;
+    return new OpenAI({ apiKey: requiredSecret("OPENAI_API_KEY") });
+  }
+
+  if (id === "clerk") {
+    const { createClerkClient } = await import("@clerk/backend");
+    return createClerkClient({ secretKey: requiredSecret("CLERK_SECRET_KEY") });
+  }
+
+  const mod = await import("igdb-api-node");
+  const igdb = mod.default as unknown as ((clientId?: string, accessToken?: string) => unknown);
+  if (typeof igdb !== "function") throw new Error("IGDB SDK default export was not found.");
+  return igdb(requiredSecret("IGDB_CLIENT_ID"), requiredSecret("IGDB_ACCESS_TOKEN"));
 }
 
 export async function executeBackendRead<T>(id: BackendAdapterId, invoke: (client: unknown) => Promise<T>): Promise<T> {
