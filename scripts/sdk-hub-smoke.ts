@@ -3,10 +3,10 @@ import { providerAdapterRegistry } from "../src/provider-adapters-v2.js";
 import { realOrchestrationPlan } from "../src/real-orchestration.js";
 
 const status = sdkHubStatus();
-if (status.length !== 5) throw new Error(`Expected 5 SDK providers, found ${status.length}.`);
+if (status.length !== 6) throw new Error(`Expected 6 SDK providers, found ${status.length}.`);
 
 const ids = new Set(status.map((row) => row.id));
-for (const required of ["replicate", "fal", "elevenlabs", "scenario", "cloudinary"]) {
+for (const required of ["replicate", "fal", "elevenlabs", "scenario", "cloudinary", "podium"]) {
   if (!ids.has(required as never)) throw new Error(`Missing SDK provider: ${required}`);
 }
 
@@ -17,13 +17,19 @@ for (const row of status) {
 }
 
 const adapters = providerAdapterRegistry();
-if (adapters.length !== 5) throw new Error(`Expected 5 Phase 2 adapters, found ${adapters.length}.`);
+if (adapters.length !== 5) throw new Error(`Expected 5 Phase 2 media adapters, found ${adapters.length}.`);
 
 const delivery = routeSdkCapability("media-delivery", { requireConfigured: false });
 if (delivery !== "cloudinary") throw new Error(`Expected Cloudinary for media delivery, got ${delivery}.`);
 
 const speech = routeSdkCapability("speech-generation", { requireConfigured: false });
 if (speech !== "elevenlabs") throw new Error(`Expected ElevenLabs for speech, got ${speech}.`);
+
+const commerce = routeSdkCapability("commerce-search", { requireConfigured: false });
+if (commerce !== "podium") throw new Error(`Expected Podium for commerce search, got ${commerce}.`);
+
+const checkout = routeSdkCapability("agentic-checkout", { requireConfigured: false });
+if (checkout !== "podium") throw new Error(`Expected Podium for agentic checkout, got ${checkout}.`);
 
 const plan = await realOrchestrationPlan({
   capability: "image-generation",

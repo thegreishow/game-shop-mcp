@@ -1,6 +1,6 @@
 import { assertPaidGenerationAllowed } from "./spend.js";
 
-export type SdkProviderId = "replicate" | "fal" | "elevenlabs" | "scenario" | "cloudinary";
+export type SdkProviderId = "replicate" | "fal" | "elevenlabs" | "scenario" | "cloudinary" | "podium";
 
 export type SdkCapability =
   | "model-inference"
@@ -14,7 +14,14 @@ export type SdkCapability =
   | "asset-management"
   | "image-transform"
   | "video-transform"
-  | "media-delivery";
+  | "media-delivery"
+  | "commerce-search"
+  | "commerce-catalog"
+  | "commerce-orders"
+  | "agentic-checkout"
+  | "agent-memory"
+  | "subscriptions"
+  | "machine-payments";
 
 export type SdkProviderDefinition = {
   id: SdkProviderId;
@@ -90,6 +97,18 @@ export const SDK_PROVIDERS: Record<SdkProviderId, SdkProviderDefinition> = {
     generationProvider: false,
     notes: "Official Cloudinary Node SDK for artifact upload, transformation, optimization and delivery.",
   },
+  podium: {
+    id: "podium",
+    packageName: "@podium-sdk/node-sdk",
+    version: "^0.5.0",
+    install: "npm install @podium-sdk/node-sdk",
+    env: ["PODIUM_API_KEY"],
+    apiBase: "https://api.podium.build/api/v1",
+    authScheme: "PODIUM_API_KEY; official SDK uses createPodiumClient({ apiKey }). podium_test_ routes to staging and podium_live_ routes to production.",
+    capabilities: ["commerce-search", "commerce-catalog", "commerce-orders", "agentic-checkout", "agent-memory", "subscriptions", "machine-payments"],
+    generationProvider: false,
+    notes: "Official Podium TypeScript SDK for agentic commerce, catalog/search, durable agent context, checkout, subscriptions and machine payments.",
+  },
 };
 
 const ROUTE_PRIORITY: Record<SdkCapability, readonly SdkProviderId[]> = {
@@ -105,6 +124,13 @@ const ROUTE_PRIORITY: Record<SdkCapability, readonly SdkProviderId[]> = {
   "image-transform": ["cloudinary"],
   "video-transform": ["cloudinary"],
   "media-delivery": ["cloudinary"],
+  "commerce-search": ["podium"],
+  "commerce-catalog": ["podium"],
+  "commerce-orders": ["podium"],
+  "agentic-checkout": ["podium"],
+  "agent-memory": ["podium"],
+  subscriptions: ["podium"],
+  "machine-payments": ["podium"],
 };
 
 function configuredEnv(name: string) {
@@ -203,6 +229,12 @@ export async function createSdkClient(provider: SdkProviderId): Promise<unknown>
     });
   }
 
+  if (provider === "podium") {
+    const createPodiumClient = mod.createPodiumClient as ((options: { apiKey: string }) => unknown) | undefined;
+    if (typeof createPodiumClient !== "function") throw new Error("Podium createPodiumClient export was not found.");
+    return createPodiumClient({ apiKey: requiredSecret("PODIUM_API_KEY") });
+  }
+
   const cloudinary = (mod.v2 ?? (mod.default as { v2?: unknown } | undefined)?.v2) as
     | { config?: (options: Record<string, unknown>) => void }
     | undefined;
@@ -223,7 +255,7 @@ export async function executeSdkRead<T>(provider: SdkProviderId, invoke: (client
 }
 
 export async function executeSdkGeneration<T>(
-  provider: Exclude<SdkProviderId, "cloudinary">,
+  provider: Exclude<SdkProviderId, "cloudinary" | "podium">,
   action: string,
   invoke: (client: unknown) => Promise<T>,
 ): Promise<T> {

@@ -68,6 +68,7 @@ const SDK_TO_INTEGRATION: Record<SdkProviderId, string> = {
   elevenlabs: "elevenlabs",
   scenario: "scenario",
   cloudinary: "cloudinary",
+  podium: "podium",
 };
 
 function envConfigured(integration: Integration): boolean {
