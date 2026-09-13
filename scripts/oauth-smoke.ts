@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
-import { createAuthorizationCode, exchangeAuthorizationCode, oauthMetadata, ownerSecretMatches, protectedResourceMetadata, verifyAccessToken } from "../src/oauth.js";
+import { createAuthorizationCode, createDynamicClient, exchangeAuthorizationCode, oauthMetadata, ownerSecretMatches, protectedResourceMetadata, refreshAccessToken, validateOAuthClient, verifyAccessToken } from "../src/oauth.js";
 import { authorizeMcpToolRequest, authorizeRequest, requiredScopesForTool } from "../src/security.js";
 
 process.env.GAME_SHOP_OAUTH_SIGNING_SECRET="test-signing-secret-32-bytes-minimum-value";
@@ -13,15 +13,26 @@ const clientId="game-shop-grok-web";
 const redirectUri="https://grok.com/connectors/oauth/callback";
 const verifier=randomBytes(32).toString("base64url");
 const challenge=createHash("sha256").update(verifier).digest("base64url");
-const code=createAuthorizationCode({issuer,clientId,redirectUri,scope:"gameshop.read gameshop.qa",codeChallenge:challenge});
+const code=createAuthorizationCode({issuer,clientId,redirectUri,scope:"gameshop.read gameshop.qa offline_access",codeChallenge:challenge});
 const token=await exchangeAuthorizationCode({code,clientId,redirectUri,codeVerifier:verifier,issuer});
 assert.equal(token.token_type,"Bearer");
 assert.match(token.scope,/gameshop\.read/);
+assert.match(token.scope,/offline_access/);
+assert.ok(token.refresh_token,"offline_access should issue a refresh token");
 const claims=verifyAccessToken(token.access_token,issuer);
 assert.equal(claims.client_id,clientId);
 assert.equal(claims.aud,`${issuer}/mcp`);
-assert.equal(oauthMetadata(issuer).code_challenge_methods_supported[0],"S256");
+const refreshed=refreshAccessToken({refreshToken:token.refresh_token!,clientId,issuer});
+assert.equal(refreshed.token_type,"Bearer");
+assert.ok(refreshed.refresh_token,"refresh grant should rotate a refresh token");
+assert.equal(verifyAccessToken(refreshed.access_token,issuer).client_id,clientId);
+const metadata=oauthMetadata(issuer);
+assert.equal(metadata.code_challenge_methods_supported[0],"S256");
+assert.ok(metadata.grant_types_supported.includes("refresh_token"));
+assert.ok(metadata.scopes_supported.includes("offline_access"));
+assert.equal(metadata.registration_endpoint,`${issuer}/oauth/register`);
 assert.equal(protectedResourceMetadata(issuer).resource,`${issuer}/mcp`);
+assert.ok(protectedResourceMetadata(issuer).scopes_supported.includes("offline_access"));
 assert.equal(ownerSecretMatches("owner-test-secret"),true);
 assert.equal(ownerSecretMatches("wrong"),false);
 await assert.rejects(()=>exchangeAuthorizationCode({code,clientId,redirectUri,codeVerifier:verifier,issuer}),/already been used/);
@@ -29,6 +40,19 @@ const secondVerifier=randomBytes(32).toString("base64url");
 const secondChallenge=createHash("sha256").update(secondVerifier).digest("base64url");
 const secondCode=createAuthorizationCode({issuer,clientId,redirectUri,scope:"gameshop.read",codeChallenge:secondChallenge});
 await assert.rejects(()=>exchangeAuthorizationCode({code:secondCode,clientId,redirectUri,codeVerifier:"wrong",issuer}),/PKCE/);
+
+const chatgptRedirect="https://chatgpt.com/oauth/callback";
+const dynamic=createDynamicClient({issuer,redirectUris:[chatgptRedirect]});
+assert.equal(dynamic.token_endpoint_auth_method,"none");
+assert.ok(dynamic.grant_types.includes("refresh_token"));
+assert.equal(validateOAuthClient(dynamic.client_id,chatgptRedirect,issuer),true);
+assert.equal(validateOAuthClient(dynamic.client_id,"https://example.com/callback",issuer),false);
+const dynamicVerifier=randomBytes(32).toString("base64url");
+const dynamicChallenge=createHash("sha256").update(dynamicVerifier).digest("base64url");
+const dynamicCode=createAuthorizationCode({issuer,clientId:dynamic.client_id,redirectUri:chatgptRedirect,scope:"gameshop.read offline_access",codeChallenge:dynamicChallenge});
+const dynamicToken=await exchangeAuthorizationCode({code:dynamicCode,clientId:dynamic.client_id,redirectUri:chatgptRedirect,codeVerifier:dynamicVerifier,issuer});
+assert.ok(dynamicToken.refresh_token,"dynamic ChatGPT-style client should receive a refresh token");
+
 assert.deepEqual(requiredScopesForTool("gameshop_plan_build"),["gameshop.plan"]);
 assert.deepEqual(requiredScopesForTool("gameshop_verify_project_branch"),["gameshop.qa"]);
 assert.deepEqual(requiredScopesForTool("gameshop_github_upsert_file"),["gameshop.write"]);
@@ -44,4 +68,4 @@ const writeScoped=await authorizeMcpToolRequest(writeRequest,writeAuth);
 assert.equal(writeScoped.ok,false,"read+qa token must not authorize write tools");
 if(!writeScoped.ok){assert.equal(writeScoped.status,403);assert.deepEqual(writeScoped.requiredScopes,["gameshop.write"]);}
 
-console.log("OAuth PKCE + durable single-use code + tool-scope smoke OK");
+console.log("OAuth PKCE + refresh token + dynamic client + tool-scope smoke OK");
