@@ -26,4 +26,4 @@ jobs:
             -H "content-type: application/json" \
             -H "x-game-shop-worker-secret: $GAME_SHOP_WORKER_SECRET" \
             -d '{"limit":20}' \
-            https://game-shop-mcp.vercel.app/api/reconcile
+            'https://game-shop-mcp.vercel.app/api/worker?action=reconcile'
