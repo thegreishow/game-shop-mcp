@@ -8,6 +8,7 @@
     "ecosystem.json",
     "mcp.json",
     "docs/GAME_WORKFLOW_ORCHESTRATION.md",
+    "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/REAL_ORCHESTRATION.md",
     "llm-handoff/manifest.json"
@@ -16,11 +17,13 @@
     "bootstrap": "npm run bootstrap:universal",
     "verifyStandalone": "npm run verify:standalone",
     "verifyGameWorkflow": "npm run test:game-workflow",
+    "verifyWebsiteWorkflow": "npm run test:website-workflow",
     "refreshSnapshots": "npm run snapshot:ecosystem",
     "exportHandoff": "npm run handoff:llm"
   },
   "canonicalCode": {
     "gameWorkflowRouter": "src/game-workflow-router.ts",
+    "websiteWorkflowRouter": "src/website-workflow-router.ts",
     "providerCatalog": "src/integrations.ts",
     "sdkHub": "src/sdk-hub.ts",
     "adapters": "src/provider-adapters-v2.ts",
@@ -35,6 +38,8 @@
     "Never commit or echo secret values.",
     "Prefer Game Shop orchestration, but preserve direct provider MCP/API/SDK access.",
     "Route game work through the smallest specialist set that satisfies the task; never migrate engines merely because another engine is available.",
+    "Route website work through the smallest stack that satisfies the task; do not add backend, commerce or 3D infrastructure merely because it is available.",
+    "For existing websites, inspect and repair incrementally before considering framework or architecture migration.",
     "Paid generation must remain blocked unless GAME_SHOP_ALLOW_PAID_GENERATION=true.",
     "Do not automatically retry a possibly-submitted paid generation on another provider.",
     "Use ecosystem.json and mcp.json as machine-readable snapshots; regenerate them after catalog/routing changes.",
@@ -43,6 +48,7 @@
   ],
   "preferredLLMWorkflow": {
     "gameRouting": "gameshop_route_game_workflow + gameshop_game_workflow_matrix",
+    "websiteRouting": "gameshop_route_website_workflow + gameshop_website_workflow_matrix",
     "discover": "gameshop_provider_health + gameshop_sdk_hub_status",
     "plan": "gameshop_plan_provider_task",
     "execute": "gameshop_run_provider_task with execute=true only when explicitly intended",
