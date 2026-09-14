@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { chromium } from "@playwright/test";
+import { localBrowserAutonomyEnabled, localBrowserEndpoint } from "./local-browser-autonomy.js";
 import { mcpInitialize, mcpListTools } from "./mcp-http-client.js";
 
 export const PLAYWRIGHT_LANE = {
@@ -13,11 +14,11 @@ export const PLAYWRIGHT_LANE = {
 } as const;
 
 function configuredMcpUrl() {
-  return process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL?.trim() || undefined;
+  return localBrowserEndpoint();
 }
 
 function cliEnabled() {
-  return process.env.GAME_SHOP_PLAYWRIGHT_CLI_ENABLED === "true";
+  return process.env.GAME_SHOP_PLAYWRIGHT_CLI_ENABLED === "true" || localBrowserAutonomyEnabled();
 }
 
 export function playwrightLaneStatus() {
@@ -34,6 +35,7 @@ export function playwrightLaneStatus() {
       configured: Boolean(configuredMcpUrl()),
       url: configuredMcpUrl() ?? PLAYWRIGHT_LANE.defaultMcpUrl,
       startCommand: PLAYWRIGHT_LANE.startCommand,
+      localAutonomy: localBrowserAutonomyEnabled(),
     },
     cli: {
       enabled: cliEnabled(),
@@ -57,7 +59,7 @@ export async function playwrightMcpHealth(input: { live?: boolean } = {}) {
   if (!input.live) return { ...status, liveChecked: false };
   const url = configuredMcpUrl();
   if (!url) {
-    return { ...status, liveChecked: true, reachable: false, reason: "GAME_SHOP_PLAYWRIGHT_MCP_URL is not configured." };
+    return { ...status, liveChecked: true, reachable: false, reason: "No Playwright MCP endpoint is configured for this runtime." };
   }
   const init = await mcpInitialize({ url, timeoutMs: 8000 });
   const listed = await mcpListTools({ url, sessionId: init.sessionId, timeoutMs: 8000 });
