@@ -1,0 +1,65 @@
+name: Autonomous Job Real Project Proof
+
+on:
+  pull_request:
+    paths:
+      - 'src/autonomous-job.ts'
+      - 'src/browser-adapters.ts'
+      - 'src/qa-worker.ts'
+      - 'src/provider-performance.ts'
+      - 'src/register-autonomous-tools.ts'
+      - 'scripts/autonomous-job-real-proof.ts'
+      - '.github/workflows/autonomous-job-real-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dubai-legends-browser-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start pinned Playwright MCP
+        run: |
+          nohup npm run playwright:mcp > /tmp/playwright-mcp.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -sS -o /tmp/playwright-init.txt -w '%{http_code}' \
+              -X POST 'http://localhost:8931/mcp' \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json, text/event-stream' \
+              --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"autonomous-proof","version":"1.0"}}}' | grep -q '^200$'; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then
+            cat /tmp/playwright-mcp.log || true
+            exit 1
+          fi
+      - name: Prove Dubai Legends through canonical job loop
+        env:
+          GAME_SHOP_PLAYWRIGHT_MCP_URL: http://localhost:8931/mcp
+          GAME_SHOP_PLAYWRIGHT_CLI_ENABLED: 'true'
+          GAME_SHOP_REAL_PROOF_URL: https://thegreishow.com/arcade/games/dubai-legends/
+        run: npm run test:autonomous-real
+      - name: Upload Playwright MCP log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-proof-playwright-mcp-log
+          path: /tmp/playwright-mcp.log
+          if-no-files-found: ignore
+          retention-days: 7
