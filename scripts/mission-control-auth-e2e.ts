@@ -56,7 +56,12 @@ async function session(accessToken:string){
 function structured(response:Awaited<ReturnType<Awaited<ReturnType<typeof session>>>>){
   const result=response.body?.result;
   if(result?.isError)throw new Error(result.content?.map((x:any)=>x.text).join("\n")||"Tool failed");
-  return result?.structuredContent??result;
+  const value=result?.structuredContent;
+  if(Array.isArray(value))return value;
+  if(value&&typeof value==="object"&&"value" in value)return (value as any).value;
+  const text=result?.content?.find?.((x:any)=>x.type==="text"&&typeof x.text==="string")?.text;
+  if(text){try{return JSON.parse(text)}catch{}}
+  return value??result;
 }
 
 const standardScope="gameshop.read gameshop.plan gameshop.qa gameshop.execute offline_access";
@@ -65,7 +70,8 @@ const call=await session(standardToken);
 
 const projectsResponse=await call("gameshop_mission_projects");
 assert.equal(projectsResponse.status,200,projectsResponse.text);
-const projects=structured(projectsResponse) as any[];
+const projectValue=structured(projectsResponse) as any;
+const projects:Array<any>=Array.isArray(projectValue)?projectValue:Object.values(projectValue??{}).filter((p:any)=>p&&typeof p==="object"&&p.projectId);
 const requiredProjects=["thegreishow-com","wata-dash-game","cruber"];
 for(const projectId of requiredProjects)assert.ok(projects.some(p=>p.projectId===projectId),`Missing Mission Control project ${projectId}`);
 
