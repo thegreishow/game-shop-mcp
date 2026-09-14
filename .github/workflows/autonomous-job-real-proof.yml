@@ -53,7 +53,7 @@ jobs:
         env:
           GAME_SHOP_PLAYWRIGHT_MCP_URL: http://localhost:8931/mcp
           GAME_SHOP_PLAYWRIGHT_CLI_ENABLED: 'true'
-          GAME_SHOP_REAL_PROOF_URL: https://jamaica-qzijmek29-thegreishows-projects.vercel.app
+          GAME_SHOP_REAL_PROOF_URL: https://thegreishow.com/arcade/games/jamaica-run/
         run: npm run test:autonomous-real
       - name: Upload Playwright MCP log
         if: always()
