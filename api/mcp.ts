@@ -6,6 +6,7 @@ import { registerPlatformTools } from "../src/register-platform-tools.js";
 import { registerFutureTools } from "../src/register-future-tools.js";
 import { registerWorkbenchTools } from "../src/register-workbench-tools.js";
 import { registerSdkTools } from "../src/register-sdk-tools.js";
+import { registerAutonomousTools } from "../src/register-autonomous-tools.js";
 import { routeMcp } from "../src/mcp-route.js";
 
 const submissionAnnotationOverrides:Record<string,Record<string,boolean>>={
@@ -23,6 +24,9 @@ const submissionAnnotationOverrides:Record<string,Record<string,boolean>>={
   gameshop_remove_project_v2:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
   gameshop_run_autonomous_pipeline:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
   gameshop_continue_provider_task:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+  gameshop_autonomous_job_prepare_branch:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_autonomous_job_judge:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+  gameshop_autonomous_job_ship:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
 };
 
 function withSubmissionAnnotations(server:any){
@@ -49,6 +53,7 @@ const handler=createMcpHandler(rawServer=>{
   registerFutureTools(server);
   registerWorkbenchTools(server);
   registerSdkTools(server);
+  registerAutonomousTools(server);
 });
 
 async function route(request:Request){return routeMcp(request,handler);}
