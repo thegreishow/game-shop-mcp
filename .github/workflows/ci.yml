@@ -46,6 +46,8 @@ jobs:
         run: npm run test:web-game-capabilities
       - name: Game workflow routing smoke
         run: npm run test:game-workflow
+      - name: Website workflow routing smoke
+        run: npm run test:website-workflow
       - name: Playwright browser lane smoke
         run: npm run test:playwright-lane
       - name: Generate machine-readable ecosystem snapshots
