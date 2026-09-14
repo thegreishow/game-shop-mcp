@@ -1,4 +1,5 @@
 import { ecosystemCatalog } from "./ecosystem-catalog.js";
+import { gameWorkflowMatrix } from "./game-workflow-router.js";
 import { spendPolicy } from "./spend.js";
 
 export const buildCapabilities = {
@@ -32,6 +33,7 @@ export const buildCapabilities = {
     },
   },
   gameArt: ["spriteship", "autosprite", "sprite-ai", "spritesheet-ai", "spritecook"],
+  gameWorkflow: gameWorkflowMatrix(),
   modelGateways: ["aimlapi", "deepseek"],
 } as const;
 
