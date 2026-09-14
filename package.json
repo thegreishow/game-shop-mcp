@@ -28,7 +28,7 @@
     "test:mission-control": "tsx scripts/mission-control-smoke.ts",
     "test:mission-auth-e2e": "tsx scripts/mission-control-auth-e2e.ts",
     "test:mission-adapters": "tsx scripts/mission-execution-adapters-smoke.ts",
-    "test:web-console": "node --check console.js && node --check console-mission.js && tsx scripts/web-console-smoke.ts",
+    "test:web-console": "node --check console.js && node --check console-mission.js && node --check console-real-execution.js && tsx scripts/web-console-smoke.ts",
     "snapshot:ecosystem": "tsx scripts/generate-ecosystem-snapshot.ts",
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
