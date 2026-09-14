@@ -9,8 +9,8 @@ if (!status.mcp.startCommand || !status.chromium.installCommand) throw new Error
 
 if (process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL) {
   const health = await playwrightMcpHealth({ live: true });
-  if (!health.reachable) throw new Error("Configured Playwright MCP endpoint was not reachable.");
-  if (!health.toolCount) throw new Error("Playwright MCP returned no tools.");
+  if (!("reachable" in health) || health.reachable !== true) throw new Error("Configured Playwright MCP endpoint was not reachable.");
+  if (!("toolCount" in health) || !health.toolCount) throw new Error("Playwright MCP returned no tools.");
   console.log(`Playwright live MCP smoke OK: tools=${health.toolCount}; chromiumInstalled=${status.chromium.installed}.`);
 } else {
   const health = await playwrightMcpHealth({ live: false });
