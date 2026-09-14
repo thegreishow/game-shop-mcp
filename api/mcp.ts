@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { registerCoreTools } from "../src/register-core-tools.js";
 import { registerGameWorkflowTools } from "../src/register-game-workflow-tools.js";
+import { registerWebsiteWorkflowTools } from "../src/register-website-workflow-tools.js";
 import { registerPlatformTools } from "../src/register-platform-tools.js";
 import { registerFutureTools } from "../src/register-future-tools.js";
 import { registerWorkbenchTools } from "../src/register-workbench-tools.js";
@@ -43,6 +44,7 @@ const handler=createMcpHandler(rawServer=>{
   const server=withSubmissionAnnotations(rawServer);
   registerCoreTools(server);
   registerGameWorkflowTools(server);
+  registerWebsiteWorkflowTools(server);
   registerPlatformTools(server);
   registerFutureTools(server);
   registerWorkbenchTools(server);
