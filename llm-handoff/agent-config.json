@@ -9,6 +9,7 @@
     "mcp.json",
     "docs/GAME_WORKFLOW_ORCHESTRATION.md",
     "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
+    "docs/WEB_CONSOLE.md",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/REAL_ORCHESTRATION.md",
     "llm-handoff/manifest.json"
@@ -18,12 +19,14 @@
     "verifyStandalone": "npm run verify:standalone",
     "verifyGameWorkflow": "npm run test:game-workflow",
     "verifyWebsiteWorkflow": "npm run test:website-workflow",
+    "verifyWebConsole": "npm run test:web-console",
     "refreshSnapshots": "npm run snapshot:ecosystem",
     "exportHandoff": "npm run handoff:llm"
   },
   "canonicalCode": {
     "gameWorkflowRouter": "src/game-workflow-router.ts",
     "websiteWorkflowRouter": "src/website-workflow-router.ts",
+    "webConsole": "index.html + console.js + console.css",
     "providerCatalog": "src/integrations.ts",
     "sdkHub": "src/sdk-hub.ts",
     "adapters": "src/provider-adapters-v2.ts",
@@ -37,6 +40,7 @@
   "rules": [
     "Never commit or echo secret values.",
     "Prefer Game Shop orchestration, but preserve direct provider MCP/API/SDK access.",
+    "The first-party web console is an MCP client, not a second orchestration implementation; server-side scopes and policy gates remain authoritative.",
     "Route game work through the smallest specialist set that satisfies the task; never migrate engines merely because another engine is available.",
     "Route website work through the smallest stack that satisfies the task; do not add backend, commerce or 3D infrastructure merely because it is available.",
     "For existing websites, inspect and repair incrementally before considering framework or architecture migration.",
@@ -47,6 +51,7 @@
     "Keep generated artifacts in the universal artifact lifecycle and route ready artifacts through persistence/placement/verification/QA where applicable."
   ],
   "preferredLLMWorkflow": {
+    "browserConsole": "/console via OAuth PKCE + live MCP tool discovery",
     "gameRouting": "gameshop_route_game_workflow + gameshop_game_workflow_matrix",
     "websiteRouting": "gameshop_route_website_workflow + gameshop_website_workflow_matrix",
     "discover": "gameshop_provider_health + gameshop_sdk_hub_status",
