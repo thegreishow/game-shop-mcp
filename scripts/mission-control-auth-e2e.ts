@@ -8,7 +8,6 @@ process.env.GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY="";
 const issuer=process.env.GAME_SHOP_PUBLIC_URL, resource=`${issuer}/mcp`, redirectUri=`${issuer}/console`;
 const oauth=await import("../src/oauth.js");
 const {POST}=await import("../api/mcp.js");
-
 async function mint(scope:string){const verifier=randomBytes(32).toString("base64url"),challenge=createHash("sha256").update(verifier).digest("base64url");const client=oauth.createDynamicClient({issuer,redirectUris:[redirectUri],metadata:{client_name:"Mission Control E2E",scope}});const code=oauth.createAuthorizationCode({issuer,clientId:client.client_id,redirectUri,scope,codeChallenge:challenge,resource});return(await oauth.exchangeAuthorizationCode({code,clientId:client.client_id,redirectUri,codeVerifier:verifier,issuer,resource})).access_token;}
 function decode(text:string){const t=text.trim();if(!t)return null;if(t.startsWith("{"))return JSON.parse(t);const rows=t.split("\n").filter(x=>x.startsWith("data:"));return rows.length?JSON.parse(rows.at(-1)!.slice(5).trim()):null;}
 async function raw(token:string,payload:any,sid?:string){const h:any={authorization:`Bearer ${token}`,accept:"application/json, text/event-stream","content-type":"application/json"};if(sid)h["mcp-session-id"]=sid;const r=await POST(new Request(resource,{method:"POST",headers:h,body:JSON.stringify(payload)}));const text=await r.text();return{status:r.status,text,body:decode(text),sid:r.headers.get("mcp-session-id")??sid};}
@@ -17,11 +16,7 @@ function data(r:any){const result=r.body?.result;if(result?.isError)throw new Er
 
 const scope="gameshop.read gameshop.plan gameshop.qa gameshop.execute offline_access",call=await client(await mint(scope));
 const listed=data(await call("gameshop_mission_projects"));const projects=Array.isArray(listed)?listed:Object.values(listed??{}).filter((p:any)=>p?.projectId);
-const cases=[
- {projectId:"thegreishow-site",lane:"website",brief:"Authenticated E2E website upgrade."},
- {projectId:"watadash-game",lane:"game",brief:"Authenticated E2E gameplay polish."},
- {projectId:"cruber",lane:"app",brief:"Authenticated E2E marketplace reliability upgrade."},
-];
+const cases=[{projectId:"thegreishow-site",lane:"website",brief:"Authenticated E2E website upgrade."},{projectId:"watadash-game",lane:"game",brief:"Authenticated E2E gameplay polish."},{projectId:"cruber",lane:"app",brief:"Authenticated E2E marketplace reliability upgrade."}];
 for(const c of cases)assert.ok(projects.some((p:any)=>p.projectId===c.projectId),`Missing Mission Control project ${c.projectId}`);
 const ids:string[]=[];
 for(const c of cases){const ctx=data(await call("gameshop_mission_context",{projectId:c.projectId}));assert.equal(ctx.project?.project?.productKind,c.lane);assert.ok(ctx.project?.specialists?.length);const planned=data(await call("gameshop_plan_mission",{projectId:c.projectId,brief:c.brief,phase:"upgrade",preference:"balanced",budgetUsd:0}));const executionId=planned.execution?.executionId??planned.packet?.executionId;assert.ok(executionId);ids.push(executionId);assert.equal(planned.packet?.mission?.lane,c.lane);assert.ok(planned.packet?.handoffs?.length);const dispatched=data(await call("gameshop_execute_mission_handoff",{executionId,note:"E2E dispatch only"}));assert.ok(dispatched.handoff?.target);assert.equal(typeof dispatched.handoff?.clientMediated,"boolean");assert.equal((await call("gameshop_execute_mission_start",{executionId})).status,200);assert.equal((await call("gameshop_qa_mission",{executionId})).status,200);}
@@ -30,6 +25,7 @@ assert.equal((await call("gameshop_record_visual_qa",{projectId:"thegreishow-sit
 assert.equal((await call("gameshop_repair_mission",{executionId})).status,200);
 assert.equal((await call("gameshop_qa_mission",{executionId})).status,200);
 assert.equal((await call("gameshop_record_visual_qa",{projectId:"thegreishow-site",executionId,status:"passed",findings:[],playwright:{status:"passed"}})).status,200);
+const patchWithoutWrite=await call("gameshop_apply_patch_mission_and_rerun",{executionId,operations:[{path:"README.md",content:"scope gate only"}]});assert.equal(patchWithoutWrite.status,403);assert.match(patchWithoutWrite.text,/gameshop\.write/);
 const noDeploy=await call("gameshop_release_mission",{executionId});assert.equal(noDeploy.status,403);assert.match(noDeploy.text,/gameshop\.deploy/);
 const releaseCall=await client(await mint(`${scope} gameshop.deploy`));const governed=await releaseCall("gameshop_release_mission",{executionId});assert.equal(governed.status,200,governed.text);assert.equal(governed.body?.result?.isError,true);const postRelease=data(await releaseCall("gameshop_mission_job",{executionId}));assert.notEqual(postRelease.stage,"released","Release governor must not allow an incomplete evidence set to reach Released");
-console.log("Authenticated Mission Control E2E OK: TheGreiShow.com + Wata Dash Game + Cruber, handoff dispatch, QA→Repair→QA, deploy scope and release governor verified.");
+console.log("Authenticated Mission Control E2E OK: 3 real projects, dispatch, QA→Repair→QA, Write+QA mutation scope, Deploy scope and release governor verified.");
