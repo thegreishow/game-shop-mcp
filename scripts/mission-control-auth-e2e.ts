@@ -72,11 +72,11 @@ const projectsResponse=await call("gameshop_mission_projects");
 assert.equal(projectsResponse.status,200,projectsResponse.text);
 const projectValue=structured(projectsResponse) as any;
 const projects:Array<any>=Array.isArray(projectValue)?projectValue:Object.values(projectValue??{}).filter((p:any)=>p&&typeof p==="object"&&p.projectId);
-const requiredProjects=["thegreishow-com","wata-dash-game","cruber"];
+const requiredProjects=["thegreishow-site","wata-dash-game","cruber"];
 for(const projectId of requiredProjects)assert.ok(projects.some(p=>p.projectId===projectId),`Missing Mission Control project ${projectId}`);
 
 const cases=[
-  {projectId:"thegreishow-com",lane:"website",brief:"Authenticated E2E: inspect the artist website, preserve the current stack, and prepare a premium incremental upgrade."},
+  {projectId:"thegreishow-site",lane:"website",brief:"Authenticated E2E: inspect the artist website, preserve the current stack, and prepare a premium incremental upgrade."},
   {projectId:"wata-dash-game",lane:"game",brief:"Authenticated E2E: inspect Wata Dash Game, preserve Phaser/browser runtime, and prepare a gameplay polish handoff."},
   {projectId:"cruber",lane:"app",brief:"Authenticated E2E: inspect Cruber as an existing marketplace app and prepare an incremental reliability upgrade."},
 ];
@@ -112,13 +112,13 @@ for(const testCase of cases){
 }
 
 const repairId=executionIds[0]!;
-let response=await call("gameshop_record_visual_qa",{projectId:"thegreishow-com",executionId:repairId,status:"failed",findings:["E2E synthetic visual drift"],consoleErrors:[],networkErrors:[],playwright:{status:"failed",source:"authenticated-e2e"},notes:"Synthetic failure to prove QA → Repair transition."});
+let response=await call("gameshop_record_visual_qa",{projectId:"thegreishow-site",executionId:repairId,status:"failed",findings:["E2E synthetic visual drift"],consoleErrors:[],networkErrors:[],playwright:{status:"failed",source:"authenticated-e2e"},notes:"Synthetic failure to prove QA → Repair transition."});
 assert.equal(response.status,200,response.text);
 response=await call("gameshop_repair_mission",{executionId:repairId,message:"Authenticated E2E repair cycle"});
 assert.equal(response.status,200,response.text);
 response=await call("gameshop_qa_mission",{executionId:repairId,message:"Return to QA after synthetic repair"});
 assert.equal(response.status,200,response.text);
-response=await call("gameshop_record_visual_qa",{projectId:"thegreishow-com",executionId:repairId,status:"passed",findings:[],consoleErrors:[],networkErrors:[],playwright:{status:"passed",source:"authenticated-e2e"},notes:"Synthetic green review after repair."});
+response=await call("gameshop_record_visual_qa",{projectId:"thegreishow-site",executionId:repairId,status:"passed",findings:[],consoleErrors:[],networkErrors:[],playwright:{status:"passed",source:"authenticated-e2e"},notes:"Synthetic green review after repair."});
 assert.equal(response.status,200,response.text);
 
 const releaseWithoutDeploy=await call("gameshop_release_mission",{executionId:repairId,message:"Scope gate test"});
