@@ -3660,6 +3660,10 @@
         "latency",
         "consecutive-failures",
         "pipeline-QA-outcomes",
+        "end-to-end-QA",
+        "artifact-acceptance",
+        "retries",
+        "observed-cost",
         "recency"
       ],
       "circuitBreaker": {
@@ -3672,7 +3676,7 @@
         ]
       },
       "persistence": "game_shop_events when Supabase is configured; process-memory fallback otherwise",
-      "spendSafety": "routing learns only from observed results; it never bypasses external-execution or paid-generation gates"
+      "spendSafety": "routing learns only from observed results; cost and QA feedback never bypass external-execution, write, or paid-generation gates"
     },
     "autonomousPipeline": {
       "stages": [
