@@ -1,2 +1,24 @@
-// Filled by the Mission Control execution-adapter release pass.
-export {};
+import assert from "node:assert/strict";
+process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS="false";
+process.env.GAME_SHOP_ALLOW_GITHUB_WRITES="false";
+process.env.GAME_SHOP_GITHUB_TOKEN="";
+process.env.GITHUB_TOKEN="";
+process.env.BROWSERBASE_API_KEY="";
+process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL="";
+const {prepareMission}=await import("../src/mission-control.js");
+const {captureMissionQa,executeMissionAdapter,missionExecutionAdapterCatalog,repairAndRerunMissionQa}=await import("../src/mission-execution-adapters.js");
+const catalog=missionExecutionAdapterCatalog();
+assert.ok(catalog.serverDirect.some((x:any)=>x.id==="github-patch"));
+assert.ok(catalog.serverDirect.some((x:any)=>x.id==="browser-qa"));
+assert.ok(catalog.clientBridges.includes("Unity"));
+const planned=await prepareMission({projectId:"watadash-game",brief:"Execution adapter smoke",phase:"upgrade"});
+const id=planned.execution.executionId;
+const bridge=await executeMissionAdapter({executionId:id,adapter:"client-bridge",target:"Game Studio"});
+assert.equal((bridge as any).mode,"client-bridge");
+const qa=await captureMissionQa({executionId:id});
+assert.ok(["blocked","failed","passed"].includes((qa as any).status));
+const repair=await repairAndRerunMissionQa({executionId:id});
+assert.equal((repair as any).status,"client-action-required");
+const provider=await executeMissionAdapter({executionId:id,adapter:"provider-capability",capability:"image-generation",payloads:{}});
+assert.equal((provider as any).mode,"blocked");
+console.log("Mission execution adapter smoke OK: direct adapter catalog, client bridge, automatic QA evidence, repair bridge and provider gate verified.");
