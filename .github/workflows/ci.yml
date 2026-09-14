@@ -52,6 +52,8 @@ jobs:
         run: npm run test:web-console
       - name: Playwright browser lane smoke
         run: npm run test:playwright-lane
+      - name: Local browser autonomy smoke
+        run: npm run test:local-browser-autonomy
       - name: Autonomous execution loop smoke
         run: npm run test:autonomous-job
       - name: Generate machine-readable ecosystem snapshots
