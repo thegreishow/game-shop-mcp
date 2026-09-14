@@ -3,7 +3,7 @@
   "project": "game-shop-mcp",
   "architecture": {
     "principle": "Game Shop orchestrates providers plus dedicated game and website workflow specialists while direct provider MCP/API/SDK access remains possible.",
-    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "website-workflow-routing", "orchestration"],
+    "layers": ["mcp", "web-console", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "website-workflow-routing", "orchestration"],
     "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
     "paidGenerationDefault": "blocked",
     "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION",
@@ -13,9 +13,13 @@
     "AGENTS.md",
     "ecosystem.json",
     "mcp.json",
+    "index.html",
+    "console.js",
+    "console.css",
     "llm-handoff/agent-config.json",
     "docs/GAME_WORKFLOW_ORCHESTRATION.md",
     "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
+    "docs/WEB_CONSOLE.md",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/SDK_HUB.md",
     "docs/REAL_ORCHESTRATION.md",
@@ -35,6 +39,14 @@
     "schemas/artifact.schema.json",
     ".env.example"
   ],
+  "webConsole": {
+    "status": "active",
+    "path": "/console",
+    "auth": "OAuth authorization code + PKCE S256 + dynamic client registration",
+    "defaultScopes": ["gameshop.read", "gameshop.plan", "gameshop.qa", "offline_access"],
+    "elevatedScopes": ["gameshop.execute", "gameshop.write", "gameshop.deploy"],
+    "policy": "The console is a first-party MCP client, not a separate orchestration implementation. It discovers and invokes the live MCP tool inventory; server-side Game Shop scope, spend, write, execution and deployment gates remain authoritative."
+  },
   "gameWorkflowRouting": {
     "status": "active",
     "version": 1,
@@ -111,6 +123,7 @@
       "mcp.json",
       "docs/GAME_WORKFLOW_ORCHESTRATION.md",
       "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
+      "docs/WEB_CONSOLE.md",
       "docs/STANDALONE_PORTABILITY.md",
       "docs/REAL_ORCHESTRATION.md",
       "llm-handoff/manifest.json",

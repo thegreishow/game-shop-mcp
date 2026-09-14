@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090b">
+  <meta name="description" content="Game Shop — universal digital production control room.">
+  <title>Game Shop · Control Room</title>
+  <link rel="stylesheet" href="/console.css">
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <div class="shell">
+    <aside class="rail">
+      <a class="brand" href="/console" aria-label="Game Shop home">
+        <span class="brand-mark">GS</span>
+        <span class="brand-copy"><b>GAME SHOP</b><small>CONTROL ROOM</small></span>
+      </a>
+      <nav class="nav" aria-label="Console sections">
+        <button class="nav-item active" data-view="overview"><span>⌂</span><em>Overview</em></button>
+        <button class="nav-item" data-view="mission"><span>⌁</span><em>Mission</em></button>
+        <button class="nav-item" data-view="projects"><span>◫</span><em>Projects</em></button>
+        <button class="nav-item" data-view="tools"><span>⌘</span><em>Tools</em></button>
+        <button class="nav-item" data-view="connect"><span>↗</span><em>Connect</em></button>
+      </nav>
+      <div class="rail-foot">
+        <span class="status-dot" id="railDot"></span>
+        <div><b id="railStatus">Disconnected</b><small id="scopeMini">No active session</small></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">UNIVERSAL DIGITAL PRODUCTION</p>
+          <h1 id="viewTitle">Control Room</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost" id="refreshBtn" disabled>Refresh</button>
+          <button class="primary" id="connectBtn">Connect Game Shop</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-overview">
+        <div class="hero panel">
+          <div>
+            <span class="badge">GAME SHOP MCP</span>
+            <h2>One control surface.<br><span>Every production lane.</span></h2>
+            <p>Route games, websites, assets, QA and releases through the same governed brain from any browser.</p>
+          </div>
+          <div class="hero-orbit" aria-hidden="true">
+            <div class="orb orb-core">GS</div>
+            <div class="orb orb-a">WEB</div>
+            <div class="orb orb-b">GAME</div>
+            <div class="orb orb-c">QA</div>
+          </div>
+        </div>
+
+        <div class="metrics" id="metrics">
+          <article class="metric"><span>Projects</span><strong>—</strong><small>Connect to load</small></article>
+          <article class="metric"><span>Executions</span><strong>—</strong><small>Governed runs</small></article>
+          <article class="metric"><span>Artifacts</span><strong>—</strong><small>Captured outputs</small></article>
+          <article class="metric"><span>Tools</span><strong>—</strong><small>Live MCP inventory</small></article>
+        </div>
+
+        <div class="two-col">
+          <article class="panel section-card">
+            <div class="section-head"><div><span class="kicker">QUICK START</span><h3>Route a mission</h3></div><button class="text-btn" data-jump="mission">Open planner →</button></div>
+            <form id="quickMission" class="quick-form">
+              <textarea id="quickBrief" rows="4" placeholder="e.g. Audit thegreishow.com and make it feel more premium without changing the core branding."></textarea>
+              <div class="inline-actions"><select id="quickLane"><option value="website">Website</option><option value="game">Game</option></select><button class="primary" type="submit">Route mission</button></div>
+            </form>
+          </article>
+          <article class="panel section-card">
+            <div class="section-head"><div><span class="kicker">SYSTEM</span><h3>Live posture</h3></div><span class="pill" id="posturePill">Offline</span></div>
+            <div class="system-list" id="systemList"><div class="empty">Authorize the console to inspect Game Shop.</div></div>
+          </article>
+        </div>
+
+        <article class="panel section-card">
+          <div class="section-head"><div><span class="kicker">ACTIVITY</span><h3>Recent events</h3></div><span class="muted" id="eventCount">0 events</span></div>
+          <div class="timeline" id="eventList"><div class="empty">No live events loaded.</div></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-mission">
+        <div class="planner-grid">
+          <article class="panel planner-card">
+            <span class="kicker">TRAFFIC CONTROLLER</span>
+            <h2>What are we building?</h2>
+            <p class="muted">Game Shop will classify the job and pick the smallest specialist set that satisfies it.</p>
+            <form id="missionForm">
+              <label>Mission brief<textarea id="missionBrief" rows="7" required placeholder="Describe the outcome, not the tools you think it needs."></textarea></label>
+              <div class="form-grid">
+                <label>Lane<select id="missionLane"><option value="website">Website</option><option value="game">Game</option></select></label>
+                <label>Phase<select id="missionPhase"><option value="audit">Audit</option><option value="upgrade">Upgrade</option><option value="fix">Fix</option><option value="create">Create</option><option value="release">Release</option></select></label>
+              </div>
+              <div class="form-grid" id="websiteOptions">
+                <label>Website type<select id="siteKind"><option value="auto">Auto</option><option value="artist">Artist</option><option value="landing">Landing</option><option value="marketing">Marketing</option><option value="portfolio">Portfolio</option><option value="content">Content</option><option value="ecommerce">E-commerce</option><option value="web-app">Web app</option><option value="experiential">Experiential / 3D</option></select></label>
+                <label>Framework<select id="siteFramework"><option value="any">Auto / existing</option><option value="react">React</option><option value="vanilla">Vanilla</option><option value="vue">Vue</option></select></label>
+              </div>
+              <div class="form-grid hidden" id="gameOptions">
+                <label>Runtime<select id="gameRuntime"><option value="auto">Auto / existing</option><option value="browser">Browser</option><option value="unity">Unity</option><option value="cinematic">Cinematic</option><option value="hybrid">Hybrid</option></select></label>
+                <label>Preference<select id="missionPreference"><option value="balanced">Balanced</option><option value="quality">Quality</option><option value="speed">Speed</option><option value="cost">Cost</option></select></label>
+              </div>
+              <label class="check"><input id="existingProject" type="checkbox" checked><span>Existing project — preserve the current stack unless requirements justify migration.</span></label>
+              <button class="primary wide" type="submit">Route through Game Shop</button>
+            </form>
+          </article>
+          <article class="panel route-card">
+            <div class="section-head"><div><span class="kicker">ROUTE</span><h3>Production path</h3></div><button class="ghost small" id="copyRouteBtn" disabled>Copy</button></div>
+            <div id="routeResult" class="route-result"><div class="empty tall">Your routed workflow will appear here.</div></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-projects">
+        <div class="section-head page-head"><div><span class="kicker">SOURCE OF TRUTH</span><h2>Registered projects</h2></div><input class="search" id="projectSearch" type="search" placeholder="Search projects…"></div>
+        <div class="project-grid" id="projectGrid"><div class="empty panel">Connect to load the project registry.</div></div>
+      </section>
+
+      <section class="view" id="view-tools">
+        <div class="tool-layout">
+          <article class="panel tool-browser">
+            <div class="section-head"><div><span class="kicker">LIVE MCP INVENTORY</span><h2>Tools</h2></div><span class="pill" id="toolCount">0</span></div>
+            <input class="search wide" id="toolSearch" type="search" placeholder="Search Game Shop tools…">
+            <div class="tool-list" id="toolList"><div class="empty">Connect to discover tools.</div></div>
+          </article>
+          <article class="panel tool-runner">
+            <span class="kicker">TOOL RUNNER</span>
+            <h3 id="runnerTitle">Select a tool</h3>
+            <p class="muted" id="runnerDescription">Live tool schemas and results appear here.</p>
+            <label>Arguments (JSON)<textarea class="mono" id="toolArgs" rows="10" spellcheck="false">{}</textarea></label>
+            <button class="primary wide" id="runToolBtn" disabled>Run tool</button>
+            <div class="result-shell"><div class="result-head"><span>RESULT</span><button class="text-btn" id="copyResultBtn">Copy</button></div><pre id="toolResult">No result yet.</pre></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-connect">
+        <div class="connect-grid">
+          <article class="panel connect-card">
+            <span class="badge">THIS BROWSER</span>
+            <h2>Authorize Game Shop Console</h2>
+            <p>OAuth + PKCE. Your owner secret is entered only on Game Shop's authorization page and is never stored in this console.</p>
+            <div class="scope-box">
+              <label class="check"><input type="checkbox" data-scope="gameshop.read" checked disabled><span><b>Read</b><small>Projects, catalogs, status and evidence</small></span></label>
+              <label class="check"><input type="checkbox" data-scope="gameshop.plan" checked><span><b>Plan</b><small>Game and website workflow routing</small></span></label>
+              <label class="check"><input type="checkbox" data-scope="gameshop.qa" checked><span><b>QA</b><small>Quality and browser evidence tools</small></span></label>
+              <label class="check elevated"><input type="checkbox" data-scope="gameshop.execute"><span><b>Execute</b><small>External/provider execution</small></span></label>
+              <label class="check elevated"><input type="checkbox" data-scope="gameshop.write"><span><b>Write</b><small>Controlled repository/project mutations</small></span></label>
+              <label class="check elevated"><input type="checkbox" data-scope="gameshop.deploy"><span><b>Deploy</b><small>Preview/production deployment actions</small></span></label>
+            </div>
+            <button class="primary wide" id="authorizeBtn">Authorize browser</button>
+            <button class="ghost wide" id="disconnectBtn">Disconnect this browser</button>
+          </article>
+
+          <article class="panel connect-card">
+            <span class="badge purple">CHATGPT / OTHER MCP CLIENTS</span>
+            <h2>Remote MCP connection</h2>
+            <p>Use the OAuth endpoint for ChatGPT, Grok and compatible remote MCP clients. Static Bearer auth remains available for CLI/CI clients.</p>
+            <div class="copy-field"><span>OAuth MCP URL</span><code id="oauthMcpUrl">https://game-shop-mcp.vercel.app/mcp</code><button data-copy="#oauthMcpUrl">Copy</button></div>
+            <div class="copy-field"><span>Bearer MCP URL</span><code id="bearerMcpUrl">https://game-shop-mcp.vercel.app/api/mcp</code><button data-copy="#bearerMcpUrl">Copy</button></div>
+            <div class="copy-field"><span>Recommended scopes</span><code id="scopeText">gameshop.read gameshop.plan gameshop.qa offline_access</code><button data-copy="#scopeText">Copy</button></div>
+            <div class="note"><b>ChatGPT connection step</b><p>Add the OAuth MCP URL as a custom app/connector in ChatGPT. Game Shop supports dynamic client registration, PKCE S256 and refresh tokens.</p></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/console.js"></script>
+</body>
+</html>
