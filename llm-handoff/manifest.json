@@ -2,8 +2,8 @@
   "schemaVersion": 2,
   "project": "game-shop-mcp",
   "architecture": {
-    "principle": "Game Shop orchestrates providers and game-development specialists while direct provider MCP/API/SDK access remains possible.",
-    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "orchestration"],
+    "principle": "Game Shop orchestrates providers plus dedicated game and website workflow specialists while direct provider MCP/API/SDK access remains possible.",
+    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "website-workflow-routing", "orchestration"],
     "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
     "paidGenerationDefault": "blocked",
     "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION",
@@ -15,11 +15,14 @@
     "mcp.json",
     "llm-handoff/agent-config.json",
     "docs/GAME_WORKFLOW_ORCHESTRATION.md",
+    "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/SDK_HUB.md",
     "docs/REAL_ORCHESTRATION.md",
     "src/game-workflow-router.ts",
     "src/register-game-workflow-tools.ts",
+    "src/website-workflow-router.ts",
+    "src/register-website-workflow-tools.ts",
     "src/integrations.ts",
     "src/sdk-hub.ts",
     "src/provider-adapters-v2.ts",
@@ -49,6 +52,16 @@
       "tripo-3d"
     ],
     "policy": "Use the smallest specialist set that satisfies the task. Preserve an existing engine unless requirements justify migration. Routing itself is read-only and never grants write, external-execution, paid-generation or deployment permission."
+  },
+  "websiteWorkflowRouting": {
+    "status": "active",
+    "version": 1,
+    "tools": [
+      "gameshop_route_website_workflow",
+      "gameshop_website_workflow_matrix"
+    ],
+    "websiteKinds": ["landing", "marketing", "artist", "portfolio", "content", "ecommerce", "web-app", "experiential"],
+    "policy": "Use the smallest stack that satisfies the website task. Existing sites should be inspected and repaired incrementally. Backend, commerce, 3D/shader and paid/external capabilities remain opt-in. Preview/browser evidence precedes production release. Routing itself is read-only."
   },
   "sdkHubPhase2": {
     "status": "active",
@@ -97,6 +110,7 @@
       "ecosystem.json",
       "mcp.json",
       "docs/GAME_WORKFLOW_ORCHESTRATION.md",
+      "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
       "docs/STANDALONE_PORTABILITY.md",
       "docs/REAL_ORCHESTRATION.md",
       "llm-handoff/manifest.json",
