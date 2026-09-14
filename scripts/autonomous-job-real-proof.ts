@@ -4,7 +4,7 @@ import { createAutonomousJob, judgeAutonomousJob } from "../src/autonomous-job.j
 
 const projectId="dubai-legends-real-proof";
 const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://thegreishow.com/arcade/games/dubai-legends/";
-function clip(value:unknown,limit=7000){let text="";try{text=JSON.stringify(value);}catch{text=String(value);}return text.length>limit?text.slice(0,limit)+"…":text;}
+function clip(value:unknown,limit=7000){let text:string;try{const encoded=JSON.stringify(value);text=encoded===undefined?String(value??""):encoded;}catch{text=String(value??"");}return text.length>limit?text.slice(0,limit)+"…":text;}
 
 async function main(){
   if(!process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL)throw new Error("GAME_SHOP_PLAYWRIGHT_MCP_URL is required for the real proof.");
@@ -29,6 +29,8 @@ async function main(){
       console.error("REAL PROOF NETWORK",clip(qa.browser?.network));
       console.error("REAL PROOF ASSERTIONS",clip(qa.browser?.assertions));
       console.error("REAL PROOF STEPS",clip(qa.browser?.steps));
+      console.error("REAL PROOF NAVIGATION",clip(qa.browser?.navigation));
+      console.error("REAL PROOF SNAPSHOT",clip(qa.browser?.snapshot));
     }
     assert.equal(judged.status,"passed",`Real project browser judgement failed: ${JSON.stringify(qa.findings??[])}`);
     assert.equal(judged.job.outcome?.status,"success");
