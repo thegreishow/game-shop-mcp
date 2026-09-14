@@ -18,7 +18,10 @@
     "setup:playwright": "playwright install chromium",
     "playwright:mcp": "npx --yes @playwright/mcp@0.0.80 --headless --caps=network,testing,devtools --port 8931",
     "playwright:cli": "npx --yes @playwright/cli@0.1.19",
+    "playwright:local": "tsx scripts/local-browser-autonomy.ts ensure",
+    "playwright:local:status": "tsx scripts/local-browser-autonomy.ts status",
     "test:playwright-lane": "tsx scripts/playwright-lane-smoke.ts",
+    "test:local-browser-autonomy": "tsx scripts/local-browser-autonomy-smoke.ts",
     "test:sdk-hub": "tsx scripts/sdk-hub-smoke.ts",
     "test:provider-health": "tsx scripts/provider-health-smoke.ts",
     "test:orchestration-v3": "tsx scripts/real-orchestration-phase3-smoke.ts",
@@ -32,8 +35,8 @@
     "snapshot:ecosystem": "tsx scripts/generate-ecosystem-snapshot.ts",
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
-    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane && npm run snapshot:ecosystem",
-    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane"
+    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane && npm run test:local-browser-autonomy && npm run snapshot:ecosystem",
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane && npm run test:local-browser-autonomy"
   },
   "dependencies": {
     "@clerk/backend": "^3.17.2",
