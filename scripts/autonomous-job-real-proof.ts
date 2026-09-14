@@ -3,7 +3,7 @@ import { setProjectOverlay, removeProjectOverlay } from "../src/project-overlay.
 import { createAutonomousJob, judgeAutonomousJob } from "../src/autonomous-job.js";
 
 const projectId="jamaica-run-real-proof";
-const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://jamaica-qzijmek29-thegreishows-projects.vercel.app";
+const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://thegreishow.com/arcade/games/jamaica-run/";
 function clip(value:unknown,limit=7000){let text:string;try{const encoded=JSON.stringify(value);text=encoded===undefined?String(value??""):encoded;}catch{text=String(value??"");}return text.length>limit?text.slice(0,limit)+"…":text;}
 
 async function main(){
@@ -12,7 +12,7 @@ async function main(){
   delete process.env.GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY;
   setProjectOverlay({id:projectId,name:"Jamaica Run",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/jamaica-run",gamePath:"arcade/games/jamaica-run",verifyPaths:["arcade/games/jamaica-run"]});
   try{
-    const job=await createAutonomousJob({goal:"Prove a real deployed Jamaica Run build works in Chromium using the canonical Game Shop browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
+    const job=await createAutonomousJob({goal:"Prove the public Jamaica Run build works in Chromium using the canonical Game Shop browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
     const judged=await judgeAutonomousJob({
       executionId:job.executionId,url,provider:"playwright-mcp",autoPreview:false,checks:[{path:"index.html",required:false}],
       interactions:["wait:500","click:#startBtn","wait:700"],
