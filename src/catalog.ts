@@ -1,6 +1,10 @@
 import { ecosystemCatalog } from "./ecosystem-catalog.js";
 import { gameWorkflowMatrix } from "./game-workflow-router.js";
 import { websiteWorkflowMatrix } from "./website-workflow-router.js";
+import { appWorkflowMatrix } from "./app-workflow-router.js";
+import { mediaWorkflowMatrix } from "./media-workflow-router.js";
+import { missionControlInfo } from "./mission-control.js";
+import { missionProjectRegistryInfo } from "./mission-projects.js";
 import { spendPolicy } from "./spend.js";
 
 export const buildCapabilities = {
@@ -34,8 +38,12 @@ export const buildCapabilities = {
     },
   },
   gameArt: ["spriteship", "autosprite", "sprite-ai", "spritesheet-ai", "spritecook"],
+  missionControl: missionControlInfo(),
+  projectMissionRegistry: missionProjectRegistryInfo(),
   gameWorkflow: gameWorkflowMatrix(),
   websiteWorkflow: websiteWorkflowMatrix(),
+  appWorkflow: appWorkflowMatrix(),
+  mediaWorkflow: mediaWorkflowMatrix(),
   modelGateways: ["aimlapi", "deepseek"],
 } as const;
 
