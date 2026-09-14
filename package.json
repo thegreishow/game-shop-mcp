@@ -15,6 +15,10 @@
     "verify:oauth-runtime-live": "tsx scripts/oauth-live-smoke.ts",
     "setup:preline": "bash scripts/setup-preline.sh",
     "setup:sdk-hub": "bash scripts/setup-sdk-hub.sh",
+    "setup:playwright": "playwright install chromium",
+    "playwright:mcp": "npx --yes @playwright/mcp@0.0.80 --headless --caps=network,testing,devtools --port 8931",
+    "playwright:cli": "npx --yes @playwright/cli@0.1.19",
+    "test:playwright-lane": "tsx scripts/playwright-lane-smoke.ts",
     "test:sdk-hub": "tsx scripts/sdk-hub-smoke.ts",
     "test:provider-health": "tsx scripts/provider-health-smoke.ts",
     "test:orchestration-v3": "tsx scripts/real-orchestration-phase3-smoke.ts",
@@ -22,8 +26,8 @@
     "snapshot:ecosystem": "tsx scripts/generate-ecosystem-snapshot.ts",
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
-    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run snapshot:ecosystem",
-    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities"
+    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:playwright-lane && npm run snapshot:ecosystem",
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:playwright-lane"
   },
   "dependencies": {
     "@clerk/backend": "^3.17.2",
@@ -48,6 +52,9 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.0.0",
+    "@playwright/cli": "^0.1.19",
+    "@playwright/mcp": "^0.0.80",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.15.8",
     "tsx": "^4.20.5",
     "typescript": "^6.0.0",
