@@ -2,8 +2,8 @@
   "schemaVersion": 2,
   "project": "game-shop-mcp",
   "architecture": {
-    "principle": "Game Shop orchestrates providers while direct provider MCP/API/SDK access remains possible.",
-    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "orchestration"],
+    "principle": "Game Shop orchestrates providers and game-development specialists while direct provider MCP/API/SDK access remains possible.",
+    "layers": ["mcp", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "orchestration"],
     "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
     "paidGenerationDefault": "blocked",
     "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION",
@@ -14,9 +14,12 @@
     "ecosystem.json",
     "mcp.json",
     "llm-handoff/agent-config.json",
+    "docs/GAME_WORKFLOW_ORCHESTRATION.md",
     "docs/STANDALONE_PORTABILITY.md",
     "docs/SDK_HUB.md",
     "docs/REAL_ORCHESTRATION.md",
+    "src/game-workflow-router.ts",
+    "src/register-game-workflow-tools.ts",
     "src/integrations.ts",
     "src/sdk-hub.ts",
     "src/provider-adapters-v2.ts",
@@ -29,6 +32,24 @@
     "schemas/artifact.schema.json",
     ".env.example"
   ],
+  "gameWorkflowRouting": {
+    "status": "active",
+    "version": 1,
+    "tools": [
+      "gameshop_route_game_workflow",
+      "gameshop_game_workflow_matrix"
+    ],
+    "runtimeLanes": ["browser", "unity", "cinematic", "hybrid"],
+    "specialists": [
+      "game-studio",
+      "game-development-studio",
+      "build-3d-game-rooms",
+      "unity",
+      "yoroll",
+      "tripo-3d"
+    ],
+    "policy": "Use the smallest specialist set that satisfies the task. Preserve an existing engine unless requirements justify migration. Routing itself is read-only and never grants write, external-execution, paid-generation or deployment permission."
+  },
   "sdkHubPhase2": {
     "status": "active",
     "realOrchestration": true,
@@ -75,6 +96,7 @@
       "AGENTS.md",
       "ecosystem.json",
       "mcp.json",
+      "docs/GAME_WORKFLOW_ORCHESTRATION.md",
       "docs/STANDALONE_PORTABILITY.md",
       "docs/REAL_ORCHESTRATION.md",
       "llm-handoff/manifest.json",
