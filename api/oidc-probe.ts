@@ -1,4 +1,4 @@
-import { getVercelOidcToken } from "@vercel/functions/oidc";
+import { getVercelOidcToken } from "@vercel/oidc";
 
 export async function GET(){
   let available=false;
