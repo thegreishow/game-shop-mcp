@@ -98,6 +98,8 @@ Examples:
 
 `gameshop_execute_mission_handoff` dispatches a structured packet. For client/local specialists it returns the exact task packet that the connected client must pass to that specialist; it does not claim that a Vercel server invoked a local/plugin runtime.
 
+A handoff being `dispatched` is not execution completion. Completion must be supported by returned artifacts, execution results or QA evidence before the job can advance through Ready/Released gates.
+
 ## Permission model
 
 Mission Control preserves the existing independent OAuth boundaries:
