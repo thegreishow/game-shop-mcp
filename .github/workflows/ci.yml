@@ -48,6 +48,8 @@ jobs:
         run: npm run test:game-workflow
       - name: Website workflow routing smoke
         run: npm run test:website-workflow
+      - name: Mission Control and app/media routing smoke
+        run: npm run test:mission-control
       - name: Web console smoke
         run: npm run test:web-console
       - name: Playwright browser lane smoke
