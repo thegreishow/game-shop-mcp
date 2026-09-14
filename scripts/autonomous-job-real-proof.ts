@@ -2,28 +2,28 @@ import assert from "node:assert/strict";
 import { setProjectOverlay, removeProjectOverlay } from "../src/project-overlay.js";
 import { createAutonomousJob, judgeAutonomousJob } from "../src/autonomous-job.js";
 
-const projectId="jamaica-run-real-proof";
-const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://thegreishow.com/arcade/games/jamaica-run/";
+const projectId="game-shop-control-room-real-proof";
+const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://game-shop-mcp.vercel.app";
 function clip(value:unknown,limit=7000){let text:string;try{const encoded=JSON.stringify(value);text=encoded===undefined?String(value??""):encoded;}catch{text=String(value??"");}return text.length>limit?text.slice(0,limit)+"…":text;}
 
 async function main(){
   if(!process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL)throw new Error("GAME_SHOP_PLAYWRIGHT_MCP_URL is required for the real proof.");
   delete process.env.GAME_SHOP_SUPABASE_URL;
   delete process.env.GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY;
-  setProjectOverlay({id:projectId,name:"Jamaica Run",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/jamaica-run",gamePath:"arcade/games/jamaica-run",verifyPaths:["arcade/games/jamaica-run"]});
+  setProjectOverlay({id:projectId,name:"Game Shop Control Room",repo:"thegreishow/game-shop-mcp",defaultBranch:"main",framework:"website",productKind:"website",projectPath:".",verifyPaths:["index.html","console.js","console.css"]});
   try{
-    const job=await createAutonomousJob({goal:"Prove the public Jamaica Run build works in Chromium using the canonical Game Shop browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
+    const job=await createAutonomousJob({goal:"Prove the live Game Shop Control Room works in Chromium using the canonical browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
     const judged=await judgeAutonomousJob({
       executionId:job.executionId,url,provider:"playwright-mcp",autoPreview:false,checks:[{path:"index.html",required:false}],
-      interactions:["wait:500","click:#startBtn","wait:700"],
+      interactions:["wait:400","click:[data-view='mission']","wait:300"],
       assertions:[
-        {kind:"title-includes",includes:"Jamaica Run"},
-        {kind:"selector-visible",selector:"#game"},
-        {kind:"canvas-ready",selector:"#game"},
-        {kind:"selector-hidden",selector:"#startScreen"},
-        {kind:"selector-visible",selector:"#scoreText"},
-        {kind:"selector-text",selector:"#scoreText",includes:"Score:"},
-        {kind:"body-min-text",min:30},
+        {kind:"title-includes",includes:"Game Shop"},
+        {kind:"selector-visible",selector:"#view-mission"},
+        {kind:"selector-text",selector:"#viewTitle",includes:"Mission"},
+        {kind:"selector-visible",selector:"#missionForm"},
+        {kind:"selector-visible",selector:"#missionBrief"},
+        {kind:"selector-visible",selector:"#missionLane"},
+        {kind:"body-min-text",min:200},
       ],
     });
     if(!("qa" in judged)||!judged.qa)throw new Error(`Real project browser judgement did not execute: ${JSON.stringify(judged)}`);
