@@ -2,22 +2,28 @@ import assert from "node:assert/strict";
 import { setProjectOverlay, removeProjectOverlay } from "../src/project-overlay.js";
 import { createAutonomousJob, judgeAutonomousJob } from "../src/autonomous-job.js";
 
-const projectId="dubai-legends-real-proof";
-const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://thegreishow.com/arcade/games/dubai-legends/";
+const projectId="jamaica-run-real-proof";
+const url=process.env.GAME_SHOP_REAL_PROOF_URL||"https://jamaica-qzijmek29-thegreishows-projects.vercel.app";
 function clip(value:unknown,limit=7000){let text:string;try{const encoded=JSON.stringify(value);text=encoded===undefined?String(value??""):encoded;}catch{text=String(value??"");}return text.length>limit?text.slice(0,limit)+"…":text;}
 
 async function main(){
   if(!process.env.GAME_SHOP_PLAYWRIGHT_MCP_URL)throw new Error("GAME_SHOP_PLAYWRIGHT_MCP_URL is required for the real proof.");
   delete process.env.GAME_SHOP_SUPABASE_URL;
   delete process.env.GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY;
-  setProjectOverlay({id:projectId,name:"Dubai Legends: Night Cup 2026",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/dubai-legends",gamePath:"arcade/games/dubai-legends",verifyPaths:["arcade/games/dubai-legends"]});
+  setProjectOverlay({id:projectId,name:"Jamaica Run",repo:"thegreishow/thegreishow.com",defaultBranch:"main",framework:"browser-game",productKind:"browser-game",projectPath:"arcade/games/jamaica-run",gamePath:"arcade/games/jamaica-run",verifyPaths:["arcade/games/jamaica-run"]});
   try{
-    const job=await createAutonomousJob({goal:"Prove Dubai Legends works in Chromium using the canonical Game Shop browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
+    const job=await createAutonomousJob({goal:"Prove a real deployed Jamaica Run build works in Chromium using the canonical Game Shop browser-authoritative execution loop",projectId,autonomy:"plan",constraints:["read-only live proof","no repository mutation","Playwright must be the terminal judge"],maxRepairAttempts:3});
     const judged=await judgeAutonomousJob({
       executionId:job.executionId,url,provider:"playwright-mcp",autoPreview:false,checks:[{path:"index.html",required:false}],
-      interactions:["wait:1500","click:#start","wait:500"],
+      interactions:["wait:500","click:#startBtn","wait:700"],
       assertions:[
-        {kind:"title-includes",includes:"Dubai Legends"},{kind:"selector-visible",selector:"#scoreboard"},{kind:"selector-visible",selector:"#controls"},{kind:"selector-text",selector:"#round",includes:"QUALIFIER"},{kind:"selector-text",selector:"#hit",includes:"HIT"},{kind:"body-min-text",min:80},
+        {kind:"title-includes",includes:"Jamaica Run"},
+        {kind:"selector-visible",selector:"#game"},
+        {kind:"canvas-ready",selector:"#game"},
+        {kind:"selector-hidden",selector:"#startScreen"},
+        {kind:"selector-visible",selector:"#scoreText"},
+        {kind:"selector-text",selector:"#scoreText",includes:"Score:"},
+        {kind:"body-min-text",min:30},
       ],
     });
     if(!("qa" in judged)||!judged.qa)throw new Error(`Real project browser judgement did not execute: ${JSON.stringify(judged)}`);
