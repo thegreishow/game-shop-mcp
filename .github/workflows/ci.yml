@@ -44,6 +44,12 @@ jobs:
         run: npm run test:orchestration-v3
       - name: Web/game backend capability smoke
         run: npm run test:web-game-capabilities
+      - name: Game workflow routing smoke
+        run: npm run test:game-workflow
+      - name: Website workflow routing smoke
+        run: npm run test:website-workflow
+      - name: Web console smoke
+        run: npm run test:web-console
       - name: Playwright browser lane smoke
         run: npm run test:playwright-lane
       - name: Autonomous execution loop smoke
