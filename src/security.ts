@@ -22,7 +22,10 @@ const DEPLOY_TOOL=/(deploy|preview_deployment|create_preview|release_to_producti
 const QA_TOOL=/(verify|qa_|diagnostic|release_governor|repair|integration_health|record_visual_qa)/i;
 const PLAN_TOOL=/(plan_|prepare_execution|route_|routing_matrix|build_matrix|motion_matrix|discover_gap|discovery_sweep|continuous_discovery)/i;
 const EXECUTE_TOOL=/(execute_|invoke_|orchestrate|generate_|cancel_|approve_|promote|persist_artifact|task_update|task_cancel|set_execution_budget|reserve_cost|settle_cost|reconcile_|handoff_execution|report_capability_incident)/i;
-const MULTI_SCOPE_TOOL:Record<string,string[]>={gameshop_apply_patch_mission_and_rerun:["gameshop.write","gameshop.qa"]};
+const MULTI_SCOPE_TOOL:Record<string,string[]>={
+ gameshop_apply_patch_mission_and_rerun:["gameshop.write","gameshop.qa"],
+ gameshop_run_mission:["gameshop.execute","gameshop.write"],
+};
 export function requiredScopesForTool(name:string):string[]{if(MULTI_SCOPE_TOOL[name])return MULTI_SCOPE_TOOL[name];if(DEPLOY_TOOL.test(name))return["gameshop.deploy"];if(WRITE_TOOL.test(name))return["gameshop.write"];if(QA_TOOL.test(name))return["gameshop.qa"];if(PLAN_TOOL.test(name))return["gameshop.plan"];if(EXECUTE_TOOL.test(name))return["gameshop.execute"];return["gameshop.read"];}
 function toolCalls(payload:unknown):Array<{name:string}>{const rows=Array.isArray(payload)?payload:[payload];const calls:Array<{name:string}>=[];for(const row of rows){if(!row||typeof row!=="object")continue;const rpc=row as Record<string,unknown>;if(rpc.method!=="tools/call")continue;const params=rpc.params as Record<string,unknown>|undefined;if(params&&typeof params.name==="string")calls.push({name:params.name});}return calls;}
 export async function authorizeMcpToolRequest(request:Request,auth:AuthDecision):Promise<AuthDecision>{if(!auth.ok||auth.mode!=="oauth")return auth;if(request.method!=="POST")return auth;let payload:unknown;try{payload=await request.clone().json();}catch{return auth;}const available=new Set(auth.scopes??[]);const required=[...new Set(toolCalls(payload).flatMap(call=>requiredScopesForTool(call.name)))];const missing=required.filter(scope=>!available.has(scope));if(missing.length)return{ok:false,status:403,error:`Insufficient OAuth scope: ${missing.join(", ")}`,requiredScopes:missing};return auth;}
