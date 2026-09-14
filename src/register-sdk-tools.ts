@@ -2,6 +2,7 @@ import { z } from "zod";
 import { backendAdapterStatus } from "./backend-adapters.js";
 import { backendReadOperationCatalog, executeBackendReadOperation } from "./backend-reads.js";
 import { publicErrorMessage } from "./errors.js";
+import { playwrightLaneStatus, playwrightMcpHealth } from "./playwright-lane.js";
 import { providerAdapterRegistry } from "./provider-adapters-v2.js";
 import { providerHealthSummary } from "./provider-health-v2.js";
 import { providerLearningInfo, providerPerformanceSnapshot } from "./provider-performance.js";
@@ -121,7 +122,19 @@ export function registerSdkTools(server: any) {
       providers: sdkHubStatus(),
       adapters: providerAdapterRegistry(),
       backendAdapters: backendAdapterStatus(),
+      playwright: playwrightLaneStatus(),
     })),
+  );
+
+  server.registerTool(
+    "gameshop_playwright_lane",
+    {
+      title: "Playwright Browser Lane",
+      description: "Inspect the first-class Playwright Test, CLI and MCP browser lane. Set live=true to verify the configured Playwright MCP endpoint and enumerate its tools.",
+      inputSchema: z.object({ live: z.boolean().optional() }),
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    },
+    safe(async ({ live }: { live?: boolean }) => playwrightMcpHealth({ live: Boolean(live) })),
   );
 
   server.registerTool(
