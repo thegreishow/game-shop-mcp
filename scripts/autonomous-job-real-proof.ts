@@ -34,14 +34,16 @@ async function main(){
         {kind:"body-min-text",min:80},
       ],
     });
-    assert.equal(judged.status,"passed",`Real project browser judgement failed: ${JSON.stringify(judged.qa?.findings??[])}`);
+    if(!("qa" in judged)||!judged.qa)throw new Error(`Real project browser judgement did not execute: ${JSON.stringify(judged)}`);
+    const qa=judged.qa;
+    assert.equal(judged.status,"passed",`Real project browser judgement failed: ${JSON.stringify(qa.findings??[])}`);
     assert.equal(judged.job.outcome?.status,"success");
-    assert.equal(judged.qa.browserAuthority.authoritative,true);
-    assert.equal(judged.qa.browserAuthority.passed,true);
-    assert.equal(judged.qa.browser?.judgement?.passed,true);
-    assert.equal((judged.qa.browser?.screenshots.length??0)>0,true);
+    assert.equal(qa.browserAuthority.authoritative,true);
+    assert.equal(qa.browserAuthority.passed,true);
+    assert.equal(qa.browser?.judgement?.passed,true);
+    assert.equal((qa.browser?.screenshots.length??0)>0,true);
     console.log(`REAL PROJECT PROOF PASSED: ${url}`);
-    console.log(`executionId=${job.executionId} provider=${judged.qa.provider} browserAuthoritative=${judged.qa.browserAuthority.passed} screenshots=${judged.qa.browser?.screenshots.length??0}`);
+    console.log(`executionId=${job.executionId} provider=${qa.provider} browserAuthoritative=${qa.browserAuthority.passed} screenshots=${qa.browser?.screenshots.length??0}`);
   }finally{removeProjectOverlay(projectId);}
 }
 main().catch(error=>{console.error(error);process.exit(1);});
