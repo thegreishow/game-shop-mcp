@@ -2,6 +2,7 @@ import { z } from "zod";
 import { backendAdapterStatus } from "./backend-adapters.js";
 import { backendReadOperationCatalog, executeBackendReadOperation } from "./backend-reads.js";
 import { publicErrorMessage } from "./errors.js";
+import { ensureLocalBrowserAutonomy, localBrowserAutonomyStatus } from "./local-browser-autonomy.js";
 import { playwrightLaneStatus, playwrightMcpHealth } from "./playwright-lane.js";
 import { providerAdapterRegistry } from "./provider-adapters-v2.js";
 import { providerHealthSummary } from "./provider-health-v2.js";
@@ -123,6 +124,7 @@ export function registerSdkTools(server: any) {
       adapters: providerAdapterRegistry(),
       backendAdapters: backendAdapterStatus(),
       playwright: playwrightLaneStatus(),
+      localBrowser: await localBrowserAutonomyStatus(),
     })),
   );
 
@@ -130,11 +132,22 @@ export function registerSdkTools(server: any) {
     "gameshop_playwright_lane",
     {
       title: "Playwright Browser Lane",
-      description: "Inspect the first-class Playwright Test, CLI and MCP browser lane. Set live=true to verify the configured Playwright MCP endpoint and enumerate its tools.",
+      description: "Inspect the first-class Playwright Test, CLI and MCP browser lane. Set live=true to verify the Playwright MCP endpoint and enumerate its tools. Local Game Shop runtimes can use the default localhost lane automatically.",
       inputSchema: z.object({ live: z.boolean().optional() }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     },
     safe(async ({ live }: { live?: boolean }) => playwrightMcpHealth({ live: Boolean(live) })),
+  );
+
+  server.registerTool(
+    "gameshop_local_browser_autonomy",
+    {
+      title: "Local Browser Autonomy",
+      description: "Inspect or ensure the local Playwright MCP + Chromium lane. On a local non-CI Game Shop runtime, ensure can automatically start the loopback Playwright MCP process when Chromium is already installed. It never auto-starts a remote endpoint or a browser process on Vercel/CI.",
+      inputSchema: z.object({ action: z.enum(["status", "ensure"]).default("status") }),
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    safe(async ({ action }: { action: "status" | "ensure" }) => action === "ensure" ? ensureLocalBrowserAutonomy({ startIfNeeded: true }) : localBrowserAutonomyStatus()),
   );
 
   server.registerTool(
