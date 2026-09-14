@@ -2,6 +2,9 @@ import { createMcpHandler } from "mcp-handler";
 import { registerCoreTools } from "../src/register-core-tools.js";
 import { registerGameWorkflowTools } from "../src/register-game-workflow-tools.js";
 import { registerWebsiteWorkflowTools } from "../src/register-website-workflow-tools.js";
+import { registerAppWorkflowTools } from "../src/register-app-workflow-tools.js";
+import { registerMediaWorkflowTools } from "../src/register-media-workflow-tools.js";
+import { registerMissionControlTools } from "../src/register-mission-control-tools.js";
 import { registerPlatformTools } from "../src/register-platform-tools.js";
 import { registerFutureTools } from "../src/register-future-tools.js";
 import { registerWorkbenchTools } from "../src/register-workbench-tools.js";
@@ -23,6 +26,8 @@ const submissionAnnotationOverrides:Record<string,Record<string,boolean>>={
   gameshop_remove_project_v2:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
   gameshop_run_autonomous_pipeline:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
   gameshop_continue_provider_task:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},
+  gameshop_release_mission:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},
+  gameshop_cancel_mission:{readOnlyHint:false,destructiveHint:true,openWorldHint:false},
 };
 
 function withSubmissionAnnotations(server:any){
@@ -45,6 +50,9 @@ const handler=createMcpHandler(rawServer=>{
   registerCoreTools(server);
   registerGameWorkflowTools(server);
   registerWebsiteWorkflowTools(server);
+  registerAppWorkflowTools(server);
+  registerMediaWorkflowTools(server);
+  registerMissionControlTools(server);
   registerPlatformTools(server);
   registerFutureTools(server);
   registerWorkbenchTools(server);
