@@ -25,12 +25,15 @@
     "test:web-game-capabilities": "tsx scripts/web-game-capabilities-smoke.ts",
     "test:game-workflow": "tsx scripts/game-workflow-router-smoke.ts",
     "test:website-workflow": "tsx scripts/website-workflow-router-smoke.ts",
-    "test:web-console": "node --check console.js && tsx scripts/web-console-smoke.ts",
+    "test:mission-control": "tsx scripts/mission-control-smoke.ts",
+    "test:mission-auth-e2e": "tsx scripts/mission-control-auth-e2e.ts",
+    "test:mission-adapters": "tsx scripts/mission-execution-adapters-smoke.ts",
+    "test:web-console": "node --check console.js && node --check console-mission.js && tsx scripts/web-console-smoke.ts",
     "snapshot:ecosystem": "tsx scripts/generate-ecosystem-snapshot.ts",
     "handoff:llm": "bash scripts/export-llm-handoff.sh",
     "bootstrap:universal": "bash scripts/bootstrap-universal-llm.sh",
-    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:web-console && npm run test:playwright-lane && npm run snapshot:ecosystem",
-    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:web-console && npm run test:playwright-lane"
+    "verify:standalone": "npm run typecheck && npm run test:sdk-hub && npm run test:provider-health && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane && npm run snapshot:ecosystem",
+    "test": "npm run typecheck && npm run test:mcp && npm run test:oauth && npm run test:security && npm run test:orchestration-v3 && npm run test:web-game-capabilities && npm run test:game-workflow && npm run test:website-workflow && npm run test:mission-control && npm run test:mission-auth-e2e && npm run test:mission-adapters && npm run test:web-console && npm run test:playwright-lane"
   },
   "dependencies": {
     "@clerk/backend": "^3.17.2",

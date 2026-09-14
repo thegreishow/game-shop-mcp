@@ -1,133 +1,57 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "project": "game-shop-mcp",
   "architecture": {
-    "principle": "Game Shop orchestrates providers plus dedicated game and website workflow specialists while direct provider MCP/API/SDK access remains possible.",
-    "layers": ["mcp", "web-console", "sdk", "api", "cli", "library", "local-runtime", "artifact-lifecycle", "game-workflow-routing", "website-workflow-routing", "orchestration"],
+    "principle": "Game Shop is a project-aware production control plane over dedicated Game, Website, App and Media workflow controllers while preserving direct provider MCP/API/SDK/CLI access.",
+    "layers": ["mcp","web-console","mission-control","project-context","durable-execution","mission-execution-adapters","automatic-visual-qa","qa-release-governance","game-workflow-routing","website-workflow-routing","app-workflow-routing","media-workflow-routing","sdk","api","cli","library","local-runtime","artifact-lifecycle","orchestration"],
     "secretPolicy": "Never commit provider secret values. Keep names/contracts in git and values in local/deployment secret stores.",
     "paidGenerationDefault": "blocked",
     "paidGenerationOptInEnv": "GAME_SHOP_ALLOW_PAID_GENERATION",
-    "fallbackPolicy": "route-before-submit only; never auto-resubmit an ambiguous paid generation to another provider"
+    "fallbackPolicy": "route-before-submit only; never auto-resubmit an ambiguous paid generation to another provider",
+    "permissionModel": ["gameshop.read","gameshop.plan","gameshop.qa","gameshop.execute","gameshop.write","gameshop.deploy"]
   },
-  "canonicalFiles": [
-    "AGENTS.md",
-    "ecosystem.json",
-    "mcp.json",
-    "index.html",
-    "console.js",
-    "console.css",
-    "llm-handoff/agent-config.json",
-    "docs/GAME_WORKFLOW_ORCHESTRATION.md",
-    "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
-    "docs/WEB_CONSOLE.md",
-    "docs/STANDALONE_PORTABILITY.md",
-    "docs/SDK_HUB.md",
-    "docs/REAL_ORCHESTRATION.md",
-    "src/game-workflow-router.ts",
-    "src/register-game-workflow-tools.ts",
-    "src/website-workflow-router.ts",
-    "src/register-website-workflow-tools.ts",
-    "src/integrations.ts",
-    "src/sdk-hub.ts",
-    "src/provider-adapters-v2.ts",
-    "src/provider-health-v2.ts",
-    "src/normalized-output.ts",
-    "src/real-orchestration.ts",
-    "src/orchestrator.ts",
-    "src/spend.ts",
-    "src/security.ts",
-    "schemas/artifact.schema.json",
-    ".env.example"
-  ],
+  "canonicalFiles": ["AGENTS.md","ecosystem.json","mcp.json","index.html","console.js","console-mission.js","console.css","console-mission.css","llm-handoff/agent-config.json","docs/MISSION_CONTROL.md","docs/MISSION_EXECUTION_ADAPTERS.md","docs/GAME_WORKFLOW_ORCHESTRATION.md","docs/WEBSITE_WORKFLOW_ORCHESTRATION.md","docs/APP_WORKFLOW_ORCHESTRATION.md","docs/MEDIA_WORKFLOW_ORCHESTRATION.md","docs/WEB_CONSOLE.md","docs/STANDALONE_PORTABILITY.md","docs/SDK_HUB.md","docs/REAL_ORCHESTRATION.md","src/mission-projects.ts","src/mission-control.ts","src/register-mission-control-tools.ts","src/mission-execution-adapters.ts","src/register-mission-execution-tools.ts","src/game-workflow-router.ts","src/register-game-workflow-tools.ts","src/website-workflow-router.ts","src/register-website-workflow-tools.ts","src/app-workflow-router.ts","src/register-app-workflow-tools.ts","src/media-workflow-router.ts","src/register-media-workflow-tools.ts","src/execution-store.ts","src/qa-evidence.ts","src/qa-memory.ts","src/release-governor.ts","src/integrations.ts","src/sdk-hub.ts","src/provider-adapters-v2.ts","src/provider-health-v2.ts","src/normalized-output.ts","src/real-orchestration.ts","src/orchestrator.ts","src/spend.ts","src/security.ts","schemas/artifact.schema.json",".env.example"],
   "webConsole": {
     "status": "active",
     "path": "/console",
+    "surfaces": ["project Mission Control","execution dashboard","visual QA","project registry","live MCP tool deck","connections"],
     "auth": "OAuth authorization code + PKCE S256 + dynamic client registration",
-    "defaultScopes": ["gameshop.read", "gameshop.plan", "gameshop.qa", "offline_access"],
-    "elevatedScopes": ["gameshop.execute", "gameshop.write", "gameshop.deploy"],
-    "policy": "The console is a first-party MCP client, not a separate orchestration implementation. It discovers and invokes the live MCP tool inventory; server-side Game Shop scope, spend, write, execution and deployment gates remain authoritative."
+    "defaultScopes": ["gameshop.read","gameshop.plan","gameshop.qa","offline_access"],
+    "elevatedScopes": ["gameshop.execute","gameshop.write","gameshop.deploy"],
+    "friendlyDomain": {"hostname":"gameshop.thegreishow.com","oauthAllowlisted":true,"binding":"external DNS/Vercel domain attachment required"},
+    "policy": "The console is a first-party MCP client, not a separate orchestration implementation. Server-side scope, spend, write, execution, QA and deployment gates remain authoritative."
   },
-  "gameWorkflowRouting": {
+  "missionControl": {
     "status": "active",
-    "version": 1,
-    "tools": [
-      "gameshop_route_game_workflow",
-      "gameshop_game_workflow_matrix"
-    ],
-    "runtimeLanes": ["browser", "unity", "cinematic", "hybrid"],
-    "specialists": [
-      "game-studio",
-      "game-development-studio",
-      "build-3d-game-rooms",
-      "unity",
-      "yoroll",
-      "tripo-3d"
-    ],
-    "policy": "Use the smallest specialist set that satisfies the task. Preserve an existing engine unless requirements justify migration. Routing itself is read-only and never grants write, external-execution, paid-generation or deployment permission."
+    "version": 2,
+    "flow": ["select-project","load-context","planned","running","qa","repair","ready","released"],
+    "projectSources": ["github","lovable","canonical arcade registry"],
+    "firstClassProjects": ["thegreishow-site","cruber","jukebaxx","watadash","watadash-game","game-shop-mcp","canonical arcade games"],
+    "tools": ["gameshop_mission_control_info","gameshop_mission_projects","gameshop_mission_context","gameshop_plan_mission","gameshop_execute_mission_handoff","gameshop_mission_jobs","gameshop_mission_job","gameshop_record_visual_qa","gameshop_execute_mission_start","gameshop_qa_mission","gameshop_repair_mission","gameshop_approve_mission","gameshop_release_mission","gameshop_cancel_mission","gameshop_mission_execution_adapters","gameshop_execute_mission_adapter","gameshop_qa_capture_mission","gameshop_qa_repair_and_rerun","gameshop_apply_patch_mission_and_rerun"],
+    "durableState": "existing game_shop_executions plus governance cost/events/previews and QA evidence/memory",
+    "handoffPolicy": "Every specialist handoff records target, transport, instruction, gate, required scope and whether it is client-mediated. Client/local runtimes must never be falsely reported as server-executed.",
+    "releasePolicy": "Released requires Deploy scope plus a green strict persisted-evidence release governor."
   },
-  "websiteWorkflowRouting": {
-    "status": "active",
-    "version": 1,
-    "tools": [
-      "gameshop_route_website_workflow",
-      "gameshop_website_workflow_matrix"
-    ],
-    "websiteKinds": ["landing", "marketing", "artist", "portfolio", "content", "ecommerce", "web-app", "experiential"],
-    "policy": "Use the smallest stack that satisfies the website task. Existing sites should be inspected and repaired incrementally. Backend, commerce, 3D/shader and paid/external capabilities remain opt-in. Preview/browser evidence precedes production release. Routing itself is read-only."
+  "missionExecutionAdapters": {
+    "serverDirect": ["source-aware GitHub inspection","approved gameshop/* GitHub repair patch","Browserbase/Playwright browser QA","existing provider SDK/API orchestration"],
+    "clientBridges": ["Game Studio","Game Development Studio","Build 3D Game Rooms","Unity","Yoroll","Lovable","Expo / React Native"],
+    "scopePolicy": {"execute":"provider/client execution only; no source mutation","qa":"automatic capture and non-mutating repair rerun","writePlusQa":"gameshop_apply_patch_mission_and_rerun","deploy":"gameshop_release_mission"},
+    "automaticQa": ["structural evidence","screenshot capture","console errors","network errors","interaction/performance evidence when provider supplies it","consecutive before/after screenshot binding"],
+    "repairPolicy": "Client/local repair requires returned evidence. GitHub source repair uses explicit replacement-file operations on gameshop/* branches, verifies project-root scope, then reruns QA."
+  },
+  "workflowControllers": {
+    "game": {"status":"active","version":1,"tools":["gameshop_route_game_workflow","gameshop_game_workflow_matrix"],"kinds":["browser","unity","cinematic","hybrid"],"specialists":["game-studio","game-development-studio","build-3d-game-rooms","unity","yoroll","tripo-3d"]},
+    "website": {"status":"active","version":1,"tools":["gameshop_route_website_workflow","gameshop_website_workflow_matrix"],"kinds":["landing","marketing","artist","portfolio","content","ecommerce","web-app","experiential"]},
+    "app": {"status":"active","version":1,"tools":["gameshop_route_app_workflow","gameshop_app_workflow_matrix"],"kinds":["mobile","web-app","desktop","hybrid","marketplace","internal-tool"],"specialists":["expo/react-native","github","supabase","stripe","playwright","chrome-devtools","vercel"]},
+    "media": {"status":"active","version":1,"tools":["gameshop_route_media_workflow","gameshop_media_workflow_matrix"],"kinds":["music","voice","video","visual","social","campaign","interactive"],"specialists":["elevenlabs","cloudinary","jitter","yoroll","motion/gsap","threejs","media-qa"]}
   },
   "sdkHubPhase2": {
-    "status": "active",
-    "realOrchestration": true,
-    "mcpExposed": true,
-    "providers": [
-      { "id": "replicate", "package": "replicate", "version": "^1.4.0", "env": ["REPLICATE_API_TOKEN"], "authStatus": "deferred-provider-auth-issue", "generation": true },
-      { "id": "fal", "package": "@fal-ai/client", "version": "^1.10.1", "env": ["FAL_KEY"], "authStatus": "configured", "generation": true },
-      { "id": "elevenlabs", "package": "@elevenlabs/elevenlabs-js", "version": "^2.68.0", "env": ["ELEVENLABS_API_KEY"], "authStatus": "ready", "generation": true },
-      { "id": "scenario", "package": "@scenario-labs/sdk", "version": "^3.1.0", "env": ["SCENARIO_API_KEY", "SCENARIO_API_SECRET"], "authStatus": "sdk-installed-api-deferred", "generation": true },
-      { "id": "cloudinary", "package": "cloudinary", "version": "^2.11.0", "env": ["CLOUDINARY_URL"], "authStatus": "configured", "generation": false }
-    ],
-    "tools": [
-      "gameshop_sdk_hub_status",
-      "gameshop_provider_health",
-      "gameshop_real_orchestration_info",
-      "gameshop_plan_provider_task",
-      "gameshop_run_provider_task",
-      "gameshop_continue_provider_task"
-    ]
+    "status":"active","realOrchestration":true,"mcpExposed":true,
+    "providers":[{"id":"replicate","package":"replicate","version":"^1.4.0","env":["REPLICATE_API_TOKEN"],"authStatus":"deferred-provider-auth-issue","generation":true},{"id":"fal","package":"@fal-ai/client","version":"^1.10.1","env":["FAL_KEY"],"authStatus":"configured","generation":true},{"id":"elevenlabs","package":"@elevenlabs/elevenlabs-js","version":"^2.68.0","env":["ELEVENLABS_API_KEY"],"authStatus":"ready","generation":true},{"id":"scenario","package":"@scenario-labs/sdk","version":"^3.1.0","env":["SCENARIO_API_KEY","SCENARIO_API_SECRET"],"authStatus":"sdk-installed-api-deferred","generation":true},{"id":"cloudinary","package":"cloudinary","version":"^2.11.0","env":["CLOUDINARY_URL"],"authStatus":"configured","generation":false}],
+    "tools":["gameshop_sdk_hub_status","gameshop_provider_health","gameshop_real_orchestration_info","gameshop_plan_provider_task","gameshop_run_provider_task","gameshop_continue_provider_task"]
   },
-  "notableStandaloneStatus": {
-    "autosprite": "configured-local-and-vercel",
-    "replicate": "adapter-ready-auth-deferred",
-    "contextcore": "local-runtime-verify-per-machine",
-    "kibo": "vendor-blocked-http-500",
-    "spline": "local-app-required",
-    "wangp": "local-runtime-deferred",
-    "ludo": "auth-deferred",
-    "scenarioApi": "auth-deferred"
-  },
-  "machineReadable": {
-    "ecosystem": "ecosystem.json",
-    "mcp": "mcp.json",
-    "artifactSchema": "schemas/artifact.schema.json",
-    "refresh": "npm run snapshot:ecosystem"
-  },
-  "handoff": {
-    "bootstrap": "npm run bootstrap:universal",
-    "verify": "npm run verify:standalone",
-    "command": "npm run handoff:llm",
-    "output": "dist/llm-handoff",
-    "targetAgents": ["Grok", "Grokbot", "Claude", "Gemini", "Codex", "other MCP/coding agents"],
-    "readOrder": [
-      "AGENTS.md",
-      "ecosystem.json",
-      "mcp.json",
-      "docs/GAME_WORKFLOW_ORCHESTRATION.md",
-      "docs/WEBSITE_WORKFLOW_ORCHESTRATION.md",
-      "docs/WEB_CONSOLE.md",
-      "docs/STANDALONE_PORTABILITY.md",
-      "docs/REAL_ORCHESTRATION.md",
-      "llm-handoff/manifest.json",
-      "llm-handoff/agent-config.json"
-    ]
-  }
+  "verification": {"authenticatedE2E":"TheGreiShow.com + Wata Dash Game + Cruber through actual MCP OAuth/PKCE handler","gates":["typecheck","mission-control smoke","authenticated mission E2E","mission execution adapter smoke","web console smoke"],"scopeAssertions":["Write+QA for source repair+rereun","Deploy for release"],"releaseAssertion":"incomplete persisted evidence cannot reach Released"},
+  "notableStandaloneStatus": {"autosprite":"configured-local-and-vercel","replicate":"adapter-ready-auth-deferred","contextcore":"local-runtime-verify-per-machine","kibo":"vendor-blocked-http-500","spline":"local-app-required","wangp":"local-runtime-deferred","ludo":"auth-deferred","scenarioApi":"auth-deferred"},
+  "machineReadable": {"ecosystem":"ecosystem.json","mcp":"mcp.json","artifactSchema":"schemas/artifact.schema.json","refresh":"npm run snapshot:ecosystem"},
+  "handoff": {"bootstrap":"npm run bootstrap:universal","verify":"npm run verify:standalone","command":"npm run handoff:llm","output":"dist/llm-handoff","targetAgents":["Grok","Grokbot","Claude","Gemini","Codex","other MCP/coding agents"],"readOrder":["AGENTS.md","ecosystem.json","mcp.json","docs/MISSION_CONTROL.md","docs/MISSION_EXECUTION_ADAPTERS.md","docs/GAME_WORKFLOW_ORCHESTRATION.md","docs/WEBSITE_WORKFLOW_ORCHESTRATION.md","docs/APP_WORKFLOW_ORCHESTRATION.md","docs/MEDIA_WORKFLOW_ORCHESTRATION.md","docs/WEB_CONSOLE.md","docs/STANDALONE_PORTABILITY.md","docs/REAL_ORCHESTRATION.md","llm-handoff/manifest.json","llm-handoff/agent-config.json"]}
 }
