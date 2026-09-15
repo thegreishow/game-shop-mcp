@@ -2,6 +2,7 @@ import { removeProjectOverlay, setProjectOverlay } from "./project-overlay.js";
 
 const REPO = "thegreishow/thegreishow.com";
 const REGISTRY_PATH = "arcade/games/games.json";
+const PUBLIC_REGISTRY_URL = `https://thegreishow.com/${REGISTRY_PATH}`;
 let canonicalIds = new Set<string>();
 
 type ArcadeGame = {
@@ -26,8 +27,8 @@ async function fetchCanonicalGames(){
     return JSON.parse(Buffer.from(payload.content.replace(/\n/g,""),"base64").toString("utf8")) as ArcadeGame[];
   }
 
-  const response=await fetch(`https://raw.githubusercontent.com/${REPO}/main/${REGISTRY_PATH}`,{
-    headers:{"user-agent":"game-shop-mcp"},
+  const response=await fetch(PUBLIC_REGISTRY_URL,{
+    headers:{accept:"application/json","user-agent":"game-shop-mcp"},
     signal:AbortSignal.timeout(8000),
   });
   if(!response.ok)throw new Error(`Canonical arcade registry public fetch failed (${response.status}).`);
@@ -50,7 +51,7 @@ export async function hydrateArcadeRegistry(){
   for(const id of canonicalIds){if(!ids.has(id))removeProjectOverlay(id);}
   for(const project of projects)setProjectOverlay(project);
   canonicalIds=ids;
-  return{authority:REGISTRY_PATH,repository:REPO,hydrated:games.length,available:true,credentialMode:githubToken()?"authenticated":"public",projects:[...ids]};
+  return{authority:REGISTRY_PATH,repository:REPO,hydrated:games.length,available:true,credentialMode:githubToken()?"authenticated":"public-site",projects:[...ids]};
 }
 
-export function arcadeRegistryInfo(){return{authority:REGISTRY_PATH,repository:REPO,role:"sole game inventory and project-root authority",operationalEnrichment:"Project Registry V2",legacyFallback:false,publicHydration:true};}
+export function arcadeRegistryInfo(){return{authority:REGISTRY_PATH,repository:REPO,publicRegistryUrl:PUBLIC_REGISTRY_URL,role:"sole game inventory and project-root authority",operationalEnrichment:"Project Registry V2",legacyFallback:false,publicHydration:true};}
