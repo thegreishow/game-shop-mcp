@@ -13,7 +13,10 @@ async function hydrate(){
     if(!canonical.available)return;
     await hydrateProjectRegistryV2();
     hydrated=true;
-  }catch{}
+  }catch(error){
+    const diagnostic=error instanceof Error?{name:error.name,message:error.message}:{name:"UnknownThrownValue",message:String(error)};
+    console.error("[Game Shop registry hydration failed]",diagnostic);
+  }
 }
 export async function guardMcpRequest(request: Request) {
   const started=Date.now();await hydrate();let auth=authorizeRequest(request);if(auth.ok)auth=await authorizeMcpToolRequest(request,auth);
