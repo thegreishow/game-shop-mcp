@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 export class ProviderRequestError extends Error {
   constructor(public provider: string, public status: number) {
     super(`${provider} request failed (${status}).`);
@@ -14,7 +16,7 @@ function redactDiagnostic(value: string) {
 }
 
 function diagnosticId() {
-  return `gs_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+  return `gs_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 }
 
 export function publicErrorMessage(error: unknown) {
