@@ -1,6 +1,6 @@
 import { integrationRegistry, type Integration } from "./integrations.js";
 import { integrationReadiness } from "./integration-runtime.js";
-import { getProject } from "./projects.js";
+import { getMissionProject } from "./mission-projects.js";
 
 export type WorkbenchPreference = "quality" | "speed" | "cost" | "balanced";
 
@@ -67,6 +67,20 @@ function scoreIntegration(integration: Integration, lane: Lane, readiness: any, 
   return score;
 }
 
+function summarizeProject(project: ReturnType<typeof getMissionProject>) {
+  const github = project.source.kind === "github" ? project.source : null;
+  return {
+    id: project.projectId,
+    name: project.name,
+    repo: github?.repo ?? null,
+    framework: project.framework ?? null,
+    productKind: project.productKind,
+    root: github?.root ?? null,
+    sourceKind: project.source.kind,
+    deployment: project.deployment ?? null,
+  };
+}
+
 export function buildWorkbenchMission(input: {
   goal: string;
   projectId?: string;
@@ -79,7 +93,7 @@ export function buildWorkbenchMission(input: {
   const readinessRows = integrationReadiness() as any[];
   const readinessById = new Map(readinessRows.map((row) => [row.id, row]));
   const lanes = inferLanes(input.goal);
-  const project = input.projectId ? getProject(input.projectId) : null;
+  const project = input.projectId ? getMissionProject(input.projectId) : null;
 
   const workflow = lanes.map((lane, index) => {
     const ranked = registry
@@ -128,9 +142,9 @@ export function buildWorkbenchMission(input: {
   const local = workflow.filter((step) => step.primary && (step.primary.mode === "stdio-mcp" || step.primary.mode === "desktop-mcp")).map((step) => ({ lane: step.lane, integration: step.primary!.id }));
 
   return {
-    version: "1.0",
+    version: "1.1",
     role: "project-aware mission router",
-    project: project ? { id: project.id, name: project.name, repo: project.repo, framework: project.framework, productKind: project.productKind, root: project.projectPath ?? project.gamePath ?? null } : null,
+    project: project ? summarizeProject(project) : null,
     goal: input.goal,
     preference,
     workflow,
@@ -138,7 +152,7 @@ export function buildWorkbenchMission(input: {
       immediateGameShopCalls: immediate,
       localCodexMcpLanes: local,
       blockers,
-      nextRecommendedTool: project ? "gameshop_plan_project" : "gameshop_plan_build",
+      nextRecommendedTool: project ? "gameshop_plan_mission" : "gameshop_plan_build",
       afterImplementation: ["gameshop_run_qa_swarm", "gameshop_evaluate_release"],
     },
     principle: "Game Shop chooses and sequences engines; it should not force one provider to do work another provider is better at.",
