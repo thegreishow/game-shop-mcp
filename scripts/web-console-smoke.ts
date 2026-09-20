@@ -11,7 +11,7 @@ async function main(){
   assert.match(html,/Planned → Running → QA → Repair → Ready → Released/);
   assert.match(html,/VISUAL \+ BROWSER EVIDENCE/);
   assert.match(html,/gameshop\.thegreishow\.com/);
-  assert.match(js,/method:\"initialize\"/);assert.match(js,/method:\"tools\/list\"/);assert.match(js,/method:\"tools\/call\"/);assert.match(js,/code_challenge_method/);assert.match(js,/gameshop_route_website_workflow/);assert.match(js,/gameshop_route_game_workflow/);
+  assert.match(js,/method:\"initialize\"/);assert.match(js,/method:\"tools\/list\"/);assert.match(js,/method:\"tools\/call\"/);assert.match(js,/code_challenge_method/);assert.match(js,/gameshop_route_website_workflow/);assert.match(js,/gameshop_route_game_workflow/);assert.match(js,/gameshop_mission_projects/);assert.doesNotMatch(js,/callTool\("gameshop_list_projects"/);
   for(const tool of ["gameshop_mission_projects","gameshop_mission_context","gameshop_plan_mission","gameshop_execute_mission_handoff","gameshop_mission_jobs","gameshop_mission_job","gameshop_record_visual_qa","gameshop_qa_capture_mission","gameshop_qa_repair_and_rerun","gameshop_approve_mission","gameshop_repair_mission","gameshop_release_mission"])assert.match(missionJs,new RegExp(tool),`missing console Mission Control tool: ${tool}`);
   assert.match(missionJs,/qaAutoCaptureBtn/);assert.match(missionJs,/qaRerunAfterRepairBtn/);assert.match(missionJs,/Confirm the repair has already been applied/);
   assert.match(missionJs,/beforeUrl/);assert.match(missionJs,/afterUrl/);assert.match(missionJs,/consoleErrors/);assert.match(missionJs,/networkErrors/);assert.match(missionJs,/playwright/);
