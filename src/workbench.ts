@@ -14,7 +14,7 @@ type Lane = {
 };
 
 const laneCatalog: Record<LaneId, Omit<Lane, "reason">> = {
-  code: { id: "code", domains: ["website", "web-app", "mobile-app", "game", "agent-platform"], capabilityTerms: ["project-init", "install", "code", "component-install", "project-memory"] },
+  code: { id: "code", domains: ["website", "web-app", "mobile-app", "game", "agent-platform"], capabilityTerms: ["project-init", "code", "component-install", "source-edit", "file-edit"] },
   ui: { id: "ui", domains: ["ui", "website", "web-app", "mobile-app", "game"], capabilityTerms: ["component", "layout", "templates", "ui", "hud", "menu"] },
   motion: { id: "motion", domains: ["motion", "ui", "game"], capabilityTerms: ["motion", "animation", "transition", "scroll", "gesture", "timeline"] },
   sprite: { id: "sprite", domains: ["game", "ui"], capabilityTerms: ["sprite", "spritesheet", "character", "pixel-art", "background-removal"] },
@@ -22,7 +22,7 @@ const laneCatalog: Record<LaneId, Omit<Lane, "reason">> = {
   "3d": { id: "3d", domains: ["3d", "game", "ui"], capabilityTerms: ["3d", "scene", "rigging", "texturing", "glb"] },
   shader: { id: "shader", domains: ["shader", "3d", "ui", "motion"], capabilityTerms: ["shader", "webgl", "gradient"] },
   qa: { id: "qa", domains: ["testing", "observability", "agent-platform"], capabilityTerms: ["audit", "doctor", "verification", "visual-review", "browser"] },
-  release: { id: "release", domains: ["deployment", "agent-platform"], capabilityTerms: ["deploy", "preview", "release", "webhooks"] },
+  release: { id: "release", domains: ["deployment", "agent-platform"], capabilityTerms: ["deploy", "deployment", "preview", "release", "publish", "publishing"] },
   memory: { id: "memory", domains: ["project-memory", "code-search", "media-search", "agent-platform"], capabilityTerms: ["memory", "search", "context", "recall", "index"] },
 };
 

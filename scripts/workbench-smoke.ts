@@ -33,6 +33,10 @@ try {
   process.env.GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS = "true";
 
   const full = buildWorkbenchMission({ goal: "Improve motion", lanes: ["motion", "motion"], maxCandidatesPerLane: 5 });
+  const code = buildWorkbenchMission({ goal: "Implement a repair", lanes: ["code"], maxCandidatesPerLane: 5 });
+  assert.ok(![code.workflow[0].primary, ...code.workflow[0].fallbacks].some((candidate) => candidate?.id === "unison-brain"));
+  const release = buildWorkbenchMission({ goal: "Publish the project", lanes: ["release"], maxCandidatesPerLane: 5 });
+  assert.ok(![release.workflow[0].primary, ...release.workflow[0].fallbacks].some((candidate) => ["fal-ai", "podium"].includes(candidate?.id ?? "")));
   const compact = buildWorkbenchMission({ goal: "Improve motion", lanes: ["motion"], maxCandidatesPerLane: 5, detail: "compact" });
   assert.equal(full.workflow.length, 1);
   assert.deepEqual(compact.executionView, full.executionView);
