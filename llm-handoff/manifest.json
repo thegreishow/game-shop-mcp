@@ -1,5 +1,6 @@
 {
   "schemaVersion": 4,
+  "workbench": {"version":"1.2","source":"src/workbench.ts","docs":"docs/WORKBENCH_ROUTING.md","capabilityMatchRequired":true,"explicitLanes":true,"compactOutput":true,"readinessIsNotHealth":true},
   "project": "game-shop-mcp",
   "architecture": {
     "principle": "Game Shop is a project-aware production control plane over dedicated Game, Website, App and Media workflow controllers while preserving direct provider MCP/API/SDK/CLI access.",
