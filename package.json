@@ -23,7 +23,7 @@
     "test:provider-health": "tsx scripts/provider-health-smoke.ts",
     "test:orchestration-v3": "tsx scripts/real-orchestration-phase3-smoke.ts",
     "test:web-game-capabilities": "tsx scripts/web-game-capabilities-smoke.ts",
-    "test:game-workflow": "tsx scripts/game-workflow-router-smoke.ts",
+    "test:game-workflow": "tsx scripts/game-workflow-router-smoke.ts && tsx scripts/workbench-smoke.ts",
     "test:website-workflow": "tsx scripts/website-workflow-router-smoke.ts",
     "test:mission-control": "tsx scripts/mission-control-smoke.ts",
     "test:mission-auth-e2e": "tsx scripts/mission-control-auth-e2e.ts",

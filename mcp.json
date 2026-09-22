@@ -241,5 +241,14 @@
       "transport": "stdio",
       "command": "python wgp.py --mcp --mcp-transport stdio"
     }
+  },
+  "workbench": {
+    "version": "1.2",
+    "source": "src/workbench.ts",
+    "docs": "docs/WORKBENCH_ROUTING.md",
+    "capabilityMatchRequired": true,
+    "explicitLanes": true,
+    "compactOutput": true,
+    "readinessIsNotHealth": true
   }
 }

@@ -15,6 +15,8 @@ export function registerWorkbenchTools(server:any){
       projectId:z.string().min(1).max(100).optional(),
       preference:z.enum(["quality","speed","cost","balanced"]).optional(),
       maxCandidatesPerLane:z.number().int().min(1).max(5).optional(),
+      lanes:z.array(z.enum(["code","ui","motion","sprite","audio","3d","shader","qa","release","memory"])).min(1).max(10).optional().describe("Explicit work lanes; omit to infer from the goal."),
+      detail:z.enum(["full","compact"]).optional().describe("Compact omits repeated installation and catalog notes while preserving routing evidence and blockers."),
     }),
     annotations:{readOnlyHint:true},
   },safe(buildWorkbenchMission));

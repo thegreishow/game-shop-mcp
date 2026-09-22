@@ -44,7 +44,9 @@ export function integrationReadiness(id?: string) {
   return items.map((integration) => {
     const env = configuredEnv(integration);
     const mode = endpointMode(integration);
-    const authReady = env.length === 0 || env.every((entry) => entry.configured);
+    const authReady = env.length > 0
+      ? env.every((entry) => entry.configured)
+      : integration.state !== "needs-auth";
     const remotelyCallable = (mode === "remote-mcp" || mode === "rest-api") && authReady;
     return {
       id: integration.id,
@@ -59,8 +61,10 @@ export function integrationReadiness(id?: string) {
       remotelyCallable,
       callableNow: remotelyCallable && externalAllowed(),
       capabilities: integration.capabilities,
-      note: remotelyCallable
-        ? (externalAllowed() ? "Ready for policy-allowlisted live Game Shop invocation." : "Credentials are available, but live external calls are locked by GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS.")
+      note: (mode === "remote-mcp" || mode === "rest-api") && !authReady
+        ? "Authentication is missing or must be established in the provider client; endpoint presence does not prove access."
+        : remotelyCallable
+        ? (externalAllowed() ? "Configured for policy-allowlisted Game Shop invocation; provider health and operation permission still require verification." : "Credentials are available, but live external calls are locked by GAME_SHOP_ALLOW_EXTERNAL_INTEGRATIONS.")
         : mode === "desktop-mcp" || mode === "stdio-mcp"
           ? "Requires a local/desktop MCP host; the cloud Game Shop runtime cannot spawn it."
           : mode === "library" || mode === "platform-api" || mode === "installable"
