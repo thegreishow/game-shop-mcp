@@ -1,4 +1,4 @@
-import { providerHealthSummary } from "../src/provider-health-v2.js";
+import { providerHealthSummary, rankHealthyProviders } from "../src/provider-health-v2.js";
 import { providerAdapterRegistry } from "../src/provider-adapters-v2.js";
 import { sdkHubStatus } from "../src/sdk-hub.js";
 
@@ -31,4 +31,6 @@ if (!summary.rows.find((row) => row.id === "kibo-ui" && row.state === "vendor-bl
   throw new Error("Expected Kibo vendor blocker to remain represented in versioned health data.");
 }
 
-console.log("PASS — no provider request was made.");
+const configured=summary.rows.find(row=>row.configured&&row.capabilities.length);if(configured){const ranked=rankHealthyProviders(configured.capabilities[0],[configured.id],{[configured.id]:{reachable:true,tested:true,latencyMs:100,estimatedCostUsd:0}});if(ranked.length!==1||ranked[0].routeEvidence.tested!==true)throw new Error("Evidence-aware routing did not preserve a verified compatible provider.");}
+const unavailable=rankHealthyProviders("component-docs",["kibo-ui"],{"kibo-ui":{reachable:false,tested:false}});if(unavailable.length)throw new Error("Unreachable provider must not be routed solely because it is registered.");
+console.log("PASS — evidence-aware routing verified; no provider request was made.");

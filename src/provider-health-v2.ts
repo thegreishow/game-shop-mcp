@@ -146,10 +146,9 @@ export function providerHealth(id: string) {
   return providerHealthSnapshot().find((provider) => provider.id === id) ?? null;
 }
 
-export function rankHealthyProviders(capability: string, ids?: string[]) {
-  return providerHealthSnapshot()
-    .filter((provider) => (!ids || ids.includes(provider.id)) && provider.capabilities.includes(capability))
-    .sort((a, b) => b.score - a.score);
+export type ProviderRouteEvidence={reachable?:boolean;tested?:boolean;latencyMs?:number;estimatedCostUsd?:number;compatible?:boolean};
+export function rankHealthyProviders(capability:string,ids?:string[],evidence:Record<string,ProviderRouteEvidence>={}){
+ return providerHealthSnapshot().filter(provider=>{const e=evidence[provider.id];return(!ids||ids.includes(provider.id))&&provider.capabilities.includes(capability)&&provider.configured&&provider.state!=="vendor-blocked"&&provider.state!=="auth-needed"&&e?.compatible!==false&&e?.reachable!==false;}).map(provider=>{const e=evidence[provider.id]??{};const verified=e.tested===true;const latencyPenalty=Math.min(20,Math.max(0,(e.latencyMs??0)/500));const costPenalty=Math.min(20,Math.max(0,(e.estimatedCostUsd??0)*10));return{...provider,routeEvidence:{configured:provider.configured,authenticated:provider.configured&&provider.state!=="auth-needed",reachable:e.reachable??null,tested:e.tested??null,latencyMs:e.latencyMs??null,estimatedCostUsd:e.estimatedCostUsd??null},routeScore:provider.score+(verified?15:0)-latencyPenalty-costPenalty};}).sort((a,b)=>b.routeScore-a.routeScore);
 }
 
 export function providerHealthSummary() {

@@ -3,6 +3,7 @@ import { routeAppWorkflow } from "../src/app-workflow-router.js";
 import { routeMediaWorkflow } from "../src/media-workflow-router.js";
 import { dispatchMissionHandoff, listMissionJobs, missionControlContext, missionProjects, prepareMission, recordMissionVisualQa, transitionMission } from "../src/mission-control.js";
 import { requiredScopesForTool } from "../src/security.js";
+import { invalidateMissionProjectSnapshot, missionProjectSourceSnapshot } from "../src/mission-projects.js";
 
 async function main(){
  delete process.env.GAME_SHOP_SUPABASE_URL;delete process.env.GAME_SHOP_SUPABASE_SERVICE_ROLE_KEY;delete process.env.GAME_SHOP_GITHUB_TOKEN;delete process.env.GITHUB_TOKEN;
@@ -14,7 +15,8 @@ async function main(){
  assert.equal(media.selectedKind,"video");assert.ok(media.stages.some(s=>/Media QA/i.test(s.owner)));assert.ok(media.gates.some(g=>/Paid generation/i.test(g)));
  const planned=await prepareMission({projectId:"cruber",brief:"Audit the worker application flow and prepare the smallest safe repair.",phase:"audit",budgetUsd:0});
  assert.equal(planned.execution.status,"planned");assert.equal(planned.packet.mission.lane,"app");assert.ok(planned.packet.handoffs.length>0);assert.equal(planned.packet.project.project.source.kind,"github");
- const context=await missionControlContext("cruber");assert.equal(context.project.project.projectId,"cruber");assert.ok(context.recentJobs.some(j=>j?.executionId===planned.execution.executionId));
+ const context=await missionControlContext("cruber");assert.equal(context.project.project.projectId,"cruber");assert.equal(context.brief.projectId,"cruber");assert.ok(context.brief.stack);assert.ok(context.brief.freshness);assert.ok(context.recentJobs.some(j=>j?.executionId===planned.execution.executionId));
+ const cached=await missionProjectSourceSnapshot("cruber");assert.equal(cached.freshness.cached,true);invalidateMissionProjectSnapshot("cruber");const refreshed=await missionProjectSourceSnapshot("cruber");assert.equal(refreshed.freshness.cached,false);
  const handoff=await dispatchMissionHandoff({executionId:planned.execution.executionId});assert.equal(handoff.executionId,planned.execution.executionId);assert.ok(handoff.handoff.target);
  await transitionMission({executionId:planned.execution.executionId,action:"qa"});
  await recordMissionVisualQa({projectId:"cruber",executionId:planned.execution.executionId,status:"passed",findings:["Smoke evidence"],consoleErrors:[],networkErrors:[],playwright:{status:"passed"}});
