@@ -24,7 +24,7 @@ function githubToken(){return process.env.GAME_SHOP_GITHUB_TOKEN||process.env.GI
 async function githubApi(path:string){const token=githubToken();if(!token)return null;const response=await fetch(`https://api.github.com${path}`,{headers:{Authorization:`Bearer ${token}`,Accept:"application/vnd.github+json","User-Agent":"game-shop-mcp"},signal:AbortSignal.timeout(10000)});if(!response.ok)return{ok:false,status:response.status};return{ok:true,status:response.status,data:await response.json() as Record<string,unknown>};}
 async function githubTextFile(source:Extract<MissionProjectSource,{kind:"github"}>,path:string){const root=source.root==="."?"":source.root.replace(/^\/+|\/+$/g,"");const full=[root,path].filter(Boolean).join("/");const r=await githubApi(`/repos/${source.repo}/contents/${encodeURI(full)}?ref=${encodeURIComponent(source.branch)}`);if(!r?.ok||!r.data)return null;const content=typeof r.data.content==="string"?r.data.content.replace(/\s/g,""):"";if(!content)return null;try{return Buffer.from(content,"base64").toString("utf8");}catch{return null;}}
 async function detectFramework(project:MissionProject){if(project.framework)return project.framework;if(project.source.kind!=="github")return project.productKind==="app"?"lovable-react":"provider-managed";const text=await githubTextFile(project.source,"package.json");if(!text)return undefined;try{const pkg=JSON.parse(text) as Record<string,any>,deps={...(pkg.dependencies??{}),...(pkg.devDependencies??{})};if(deps.expo)return"expo";if(deps.next)return"next";if(deps.phaser)return"phaser";if(deps.vue)return"vue";if(deps.react&&deps.vite)return"react-vite";if(deps.react)return"react";return"node";}catch{return undefined;}}
-async function githubSnapshot(project:MissionProject){if(project.source.kind!=="github")return{kind:project.source.kind,liveInspection:"client-connector",projectId:project.source.projectId,previewUrl:project.source.previewUrl??null,publishedUrl:project.source.publishedUrl??null};const repo=await githubApi(`/repos/${project.source.repo}`);const commit=await githubApi(`/repos/${project.source.repo}/commits/${encodeURIComponent(project.source.branch)}`);return{kind:"github",configured:Boolean(githubToken()),repo:project.source.repo,root:project.source.root,branch:project.source.branch,repository:repo?.ok?{defaultBranch:repo.data?.default_branch,visibility:repo.data?.visibility,pushedAt:repo.data?.pushed_at,updatedAt:repo.data?.updated_at}:repo,latestCommit:commit?.ok?{sha:commit.data?.sha,htmlUrl:commit.data?.html_url}:commit};}
+async function githubSnapshot(project:MissionProject){if(project.source.kind!=="github")return{kind:project.source.kind,liveInspection:"client-connector",projectId:project.source.projectId,previewUrl:project.source.previewUrl??null,publishedUrl:project.source.publishedUrl??null};const [repo,commit]=await Promise.all([githubApi(`/repos/${project.source.repo}`),githubApi(`/repos/${project.source.repo}/commits/${encodeURIComponent(project.source.branch)}`)]);return{kind:"github",configured:Boolean(githubToken()),repo:project.source.repo,root:project.source.root,branch:project.source.branch,repository:repo?.ok?{defaultBranch:repo.data?.default_branch,visibility:repo.data?.visibility,pushedAt:repo.data?.pushed_at,updatedAt:repo.data?.updated_at}:repo,latestCommit:commit?.ok?{sha:commit.data?.sha,htmlUrl:commit.data?.html_url}:commit};}
 
 export function projectSpecialists(project:MissionProject){
  if(project.productKind==="game")return["Game Shop","Game Studio","Game Development Studio","Build 3D Game Rooms","Unity","Yoroll","GitHub","Playwright"];
@@ -33,8 +33,40 @@ export function projectSpecialists(project:MissionProject){
  return["Game Shop","Expo / React Native","Lovable","Supabase","Stripe","Playwright","Chrome DevTools","GitHub"];
 }
 
-const SNAPSHOT_TTL_MS=30_000;const snapshotCache=new Map<string,{at:number,value:any}>();
-export function invalidateMissionProjectSnapshot(projectId?:string){if(projectId)snapshotCache.delete(projectId);else snapshotCache.clear();}
-export async function missionProjectSourceSnapshot(projectId:string,options:{fresh?:boolean}={}){const cached=snapshotCache.get(projectId);if(!options.fresh&&cached&&Date.now()-cached.at<SNAPSHOT_TTL_MS)return{...cached.value,freshness:{cached:true,ageMs:Date.now()-cached.at,ttlMs:SNAPSHOT_TTL_MS}};const project=getMissionProject(projectId);const [source,framework,enrichment]=await Promise.all([githubSnapshot(project),detectFramework(project),getProjectV2(projectId).catch(()=>null)]);const value={project:{...project,framework:enrichment?.framework||framework||project.framework},source,enrichment:enrichment?{framework:enrichment.framework,deploymentProvider:enrichment.deploymentProvider,deploymentProject:enrichment.deploymentProject,qaPolicy:enrichment.qaPolicy,requiredRegressions:enrichment.requiredRegressions,permissionProfile:enrichment.permissionProfile,budgetProfile:enrichment.budgetProfile,brandContext:enrichment.brandContext}:null,specialists:projectSpecialists(project),freshness:{cached:false,ageMs:0,ttlMs:SNAPSHOT_TTL_MS}};snapshotCache.set(projectId,{at:Date.now(),value});return value;}
+const SNAPSHOT_TTL_MS = 30_000;
+async function loadMissionProjectSnapshot(project: MissionProject) {
+ const [source, framework, enrichment] = await Promise.all([githubSnapshot(project), detectFramework(project), getProjectV2(project.projectId).catch(() => null)]);
+ return {project:{...project,framework:enrichment?.framework||framework||project.framework},source,enrichment:enrichment?{framework:enrichment.framework,deploymentProvider:enrichment.deploymentProvider,deploymentProject:enrichment.deploymentProject,qaPolicy:enrichment.qaPolicy,requiredRegressions:enrichment.requiredRegressions,permissionProfile:enrichment.permissionProfile,budgetProfile:enrichment.budgetProfile,brandContext:enrichment.brandContext}:null,specialists:projectSpecialists(project),freshness:{cached:false,ageMs:0,ttlMs:SNAPSHOT_TTL_MS}};
+}
+type MissionSnapshot = Awaited<ReturnType<typeof loadMissionProjectSnapshot>>;
+const snapshotCache = new Map<string, {at:number; value:MissionSnapshot}>();
+const pendingSnapshots = new Map<string, Promise<MissionSnapshot>>();
+
+export function invalidateMissionProjectSnapshot(projectId?: string) {
+ if (projectId) { snapshotCache.delete(projectId); pendingSnapshots.delete(projectId); }
+ else { snapshotCache.clear(); pendingSnapshots.clear(); }
+}
+
+export async function missionProjectSourceSnapshot(projectId: string, options: {fresh?:boolean} = {}) {
+ const project = getMissionProject(projectId);
+ if (options.fresh) invalidateMissionProjectSnapshot(projectId);
+ const cached = snapshotCache.get(projectId);
+ if (cached && Date.now() - cached.at < SNAPSHOT_TTL_MS) {
+  return structuredClone({...cached.value, freshness:{cached:true,ageMs:Date.now()-cached.at,ttlMs:SNAPSHOT_TTL_MS}});
+ }
+ let pending = pendingSnapshots.get(projectId);
+ if (!pending) {
+  pending = loadMissionProjectSnapshot(project);
+  pendingSnapshots.set(projectId, pending);
+ }
+ try {
+  const value = await pending;
+  // Only the current request may populate the cache after refresh/invalidation.
+  if (pendingSnapshots.get(projectId) === pending) snapshotCache.set(projectId, {at:Date.now(), value});
+  return structuredClone(value);
+ } finally {
+  if (pendingSnapshots.get(projectId) === pending) pendingSnapshots.delete(projectId);
+ }
+}
 
 export function missionProjectRegistryInfo(){return{version:3,role:"cross-product Mission Control registry",sources:["github","lovable"],productKinds:["game","website","app","media"],builtins:BUILTIN.map(p=>p.projectId),arcadeProjects:"hydrated from canonical thegreishow.com arcade registry",v2Enrichment:"applied when present; never allowed to silently replace source identity"};}
