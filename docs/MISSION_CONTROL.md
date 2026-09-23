@@ -26,7 +26,7 @@ The older Project Registry V2 remains operational enrichment. It may add framewo
 
 ## Context loading
 
-`gameshop_mission_context` loads before planning. It returns a bounded `brief` first so clients can reuse one discovery result instead of repeatedly probing the project. Source snapshots use a 30-second in-process cache; responses disclose `cached`, `ageMs`, and `ttlMs`, and source-mutating workflows must explicitly invalidate or request a fresh snapshot before revision-bound verification. It loads:
+`gameshop_mission_context` loads before planning. It returns a bounded `brief` first so clients can reuse one discovery result instead of repeatedly probing the project. Source snapshots use a 30-second in-process cache; responses disclose `cached`, `ageMs`, and `ttlMs`, and source-mutating workflows must explicitly invalidate or request a fresh snapshot before revision-bound verification. Concurrent cache misses share one load per project; repository and commit reads run concurrently. Refresh/invalidation detaches older in-flight loads so they cannot repopulate the cache. Each caller receives an isolated copy, and rejected loads are removed so later calls can retry. This coalescing is per process, not distributed across Vercel instances. It loads:
 
 - source provider, repo/project id, root and branch where applicable;
 - detected framework/runtime where inspectable;
