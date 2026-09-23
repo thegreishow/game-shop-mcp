@@ -1,5 +1,6 @@
 {
   "schemaVersion": 4,
+  "auditPolicy": {"gameAuditReadOnly":true,"githubAuditInspectionScope":"gameshop.read","releaseScope":"gameshop.deploy","clientExecutionStillGated":true},
   "workbench": {"version":"1.2","source":"src/workbench.ts","docs":"docs/WORKBENCH_ROUTING.md","capabilityMatchRequired":true,"explicitLanes":true,"compactOutput":true,"readinessIsNotHealth":true},
   "project": "game-shop-mcp",
   "architecture": {

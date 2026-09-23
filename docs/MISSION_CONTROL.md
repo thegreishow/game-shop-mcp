@@ -1,5 +1,12 @@
 # Project-aware Mission Control
 
+Game audits plan read-only source inspection, diagnosis and QA, without
+implementation, asset-generation or release stages even if those needs are listed.
+GitHub audit inspection carries `gameshop.read`, QA stages carry `gameshop.qa`,
+and release stages retain `gameshop.deploy`. Packet labels do not grant authority:
+client execution and server adapter scope checks remain independent, and
+non-audit GitHub mutation paths retain Write.
+
 Mission Control turns Game Shop from a capability router into a project-aware production control plane.
 
 ## Flow
