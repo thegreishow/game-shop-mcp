@@ -164,13 +164,17 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
   const cautions: string[] = [];
 
   pushStage(stages, "supervision", "game-shop", "Resolve project context, classify the task, establish safety/spend/write gates and preserve evidence.");
-  pushStage(stages, "source", "github", request.existingProject ? "Inspect the existing source of truth before mutation." : "Establish the source-of-truth branch/repository before implementation.");
+  pushStage(stages, "source", "github", phase === "audit" ? "Inspect the existing source revision read-only; do not create branches or modify files." : request.existingProject ? "Inspect the existing source of truth before mutation." : "Establish the source-of-truth branch/repository before implementation.");
 
   const include = (id: WorkflowTargetId) => {
     if (id !== "game-shop" && id !== "github") specialists.push(id);
   };
 
-  if (runtime === "browser") {
+  if (phase === "audit") {
+    const owner = runtime === "unity" ? "unity" : runtime === "cinematic" ? "yoroll" : "game-studio";
+    include(owner);
+    pushStage(stages, "audit", owner, "Inspect the existing project and runtime read-only; reproduce issues and report evidence-backed findings without implementing changes or generating assets.");
+  } else if (runtime === "browser") {
     include("game-studio");
     pushStage(stages, "runtime", "game-studio", phase === "fix" ? "Reproduce and repair the browser gameplay/runtime without changing engines by default." : "Design or implement the browser game using the existing stack; default new 2D work to Phaser and explicit 3D work to Three.js/R3F.");
   } else if (runtime === "unity") {
@@ -189,7 +193,7 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
     gates.push("hybrid-boundary: Yoroll media/story state must not become an opaque replacement for the canonical game source.");
   }
 
-  if (needs.has("3d-room")) {
+  if (phase !== "audit" && needs.has("3d-room")) {
     include("build-3d-game-rooms");
     include("game-development-studio");
     pushStage(stages, "environment", "build-3d-game-rooms", "Design, validate and compose the 3D room/environment through Function, Form and Runtime gates.", false, "function-form-runtime-approvals");
@@ -197,7 +201,7 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
     gates.push("room-gates: Function approval before paid mesh work, Form approval before export, Runtime approval before publish.");
   }
 
-  if (needs.has("3d-assets")) {
+  if (phase !== "audit" && needs.has("3d-assets")) {
     include("game-development-studio");
     include("tripo-3d");
     pushStage(stages, "3d-assets", "game-development-studio", "Define game-ready dimensions/topology/texture budgets, generate or ingest assets, inspect bytes, normalize only when justified, and package provenance.");
@@ -205,7 +209,7 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
     gates.push("3d-provider-spend: provider credentials remain outside chat; billable generation requires explicit authorization and a spend ceiling.");
   }
 
-  if (needs.has("2d-assets")) {
+  if (phase !== "audit" && needs.has("2d-assets")) {
     if (runtime === "browser" || runtime === "hybrid") {
       include("game-studio");
       pushStage(stages, "2d-assets", "game-studio", "Use the sprite pipeline for consistent 2D character/effect generation, normalization and previews.");
@@ -217,17 +221,12 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
   if ([...LOCAL_DIAGNOSTIC_NEEDS].some((need) => needs.has(need))) {
     include("game-development-studio");
     if (needs.has("visual-debug")) pushStage(stages, "diagnostics", "game-development-studio", "Capture reproducible offscreen evidence and diagnose renderer/visual regressions before editing.", false, "reproducible-adapter");
-    if (needs.has("performance")) pushStage(stages, "performance", "game-development-studio", "Compare sealed baseline/candidate telemetry and run bounded optimization only against measurable goals.", false, "measurable-baseline");
+    if (needs.has("performance")) pushStage(stages, "performance", "game-development-studio", phase === "audit" ? "Measure baseline runtime performance read-only and report bottlenecks without applying optimizations." : "Compare sealed baseline/candidate telemetry and run bounded optimization only against measurable goals.", false, "measurable-baseline");
   }
 
-  if (runtime === "unity" && (needs.has("physics") || needs.has("ai-navigation") || needs.has("multiplayer"))) {
+  if (phase !== "audit" && runtime === "unity" && (needs.has("physics") || needs.has("ai-navigation") || needs.has("multiplayer"))) {
     const capabilities = [needs.has("physics") ? "physics" : null, needs.has("ai-navigation") ? "AI navigation" : null, needs.has("multiplayer") ? "multiplayer services" : null].filter(Boolean).join(", ");
     pushStage(stages, "engine-systems", "unity", `Implement or diagnose ${capabilities} through the relevant Unity specialist workflows and validate in the real project.`);
-  }
-
-  if (phase === "audit") {
-    if (runtime === "unity") pushStage(stages, "audit", "unity", "Run the Unity project health check read-only by default and prioritize evidence-backed findings.");
-    else pushStage(stages, "audit", "game-studio", "Review browser-game architecture, runtime, UI and playability before proposing mutations.");
   }
 
   if (runtime === "browser" || runtime === "hybrid" || needs.has("browser-qa")) {
@@ -239,7 +238,7 @@ export function routeGameWorkflow(request: GameWorkflowRequest) {
     pushStage(stages, "qa", "unity", "Validate compilation, Console state, tests, scenes/prefabs and target build readiness before calling the work complete.", false, "unity-workspace");
   }
 
-  if (phase === "release" || needs.has("deployment")) {
+  if (phase === "release" || (phase !== "audit" && needs.has("deployment"))) {
     pushStage(stages, "release", "game-shop", "Apply QA/release governance and reject unresolved blocking regressions.");
     pushStage(stages, "release", "github", "Verify branch scope, review CI/evidence, then open or merge the reviewed pull request according to release policy.");
   } else {

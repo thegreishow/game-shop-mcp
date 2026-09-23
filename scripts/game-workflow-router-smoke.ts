@@ -56,6 +56,13 @@ assert.ok(release.stages.some((stage) => stage.lane === "release" && stage.owner
 assert.ok(release.stages.some((stage) => stage.lane === "release" && stage.owner === "github"));
 
 const matrix = gameWorkflowMatrix();
+for (const runtime of ["browser", "unity", "cinematic", "hybrid"] as const) {
+  const audit = routeGameWorkflow({brief:"Read-only Rasta Runner audit; no asset generation or deployment.", phase:"audit", runtime, existingProject:true, needs:["gameplay","2d-assets","3d-assets","3d-room","performance","deployment","physics"]});
+  assert.ok(audit.stages.some((stage) => stage.lane === "audit"));
+  assert.ok(!audit.stages.some((stage) => ["runtime","cinematic","2d-assets","3d-assets","3d-provider","environment","asset-finalization","engine-systems","release"].includes(stage.lane)));
+  assert.ok(!audit.specialists.some((target) => target.id === "tripo-3d"));
+  assert.ok(audit.stages.some((stage) => stage.lane === "source" && stage.purpose.includes("read-only")));
+}
 assert.equal(matrix.targets.length, 8);
 assert.deepEqual(matrix.release, ["game-shop", "github"]);
 

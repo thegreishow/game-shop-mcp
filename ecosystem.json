@@ -3942,5 +3942,11 @@
     "explicitLanes": true,
     "compactOutput": true,
     "readinessIsNotHealth": true
+  },
+  "auditPolicy": {
+    "gameAuditReadOnly": true,
+    "githubAuditInspectionScope": "gameshop.read",
+    "releaseScope": "gameshop.deploy",
+    "clientExecutionStillGated": true
   }
 }

@@ -16,7 +16,8 @@ const ecosystem={schemaVersion:2,repository:"thegreishow/game-shop-mcp",canonica
 const servers=Object.fromEntries(integrations.filter(i=>i.kinds.includes("mcp")&&i.endpoint).map(i=>[i.id,{url:i.endpoint,env:i.env??[],auth:i.auth??null,state:i.state,capabilities:i.capabilities}]));
 const mcp={schemaVersion:1,gameShop:{transport:"streamable-http",url:process.env.GAME_SHOP_PUBLIC_URL||"https://game-shop-mcp.vercel.app/api/mcp",auth:"Bearer ${GAME_SHOP_MCP_TOKEN}",env:["GAME_SHOP_MCP_TOKEN"]},servers,localServers:{contextcore:{transport:"stdio",command:"~/.local/share/game-shop/contextcore-mcp-wrapper.sh"},wangp:{transport:"stdio",command:"python wgp.py --mcp --mcp-transport stdio"}}};
 const workbench = { version: "1.2", source: "src/workbench.ts", docs: "docs/WORKBENCH_ROUTING.md", capabilityMatchRequired: true, explicitLanes: true, compactOutput: true, readinessIsNotHealth: true };
-await writeFile(new URL("../ecosystem.json",import.meta.url),JSON.stringify({...ecosystem, workbench},null,2)+"\n");
-await writeFile(new URL("../mcp.json",import.meta.url),JSON.stringify({...mcp, workbench},null,2)+"\n");
+const auditPolicy = { gameAuditReadOnly: true, githubAuditInspectionScope: "gameshop.read", releaseScope: "gameshop.deploy", clientExecutionStillGated: true };
+await writeFile(new URL("../ecosystem.json",import.meta.url),JSON.stringify({...ecosystem, workbench, auditPolicy},null,2)+"\n");
+await writeFile(new URL("../mcp.json",import.meta.url),JSON.stringify({...mcp, workbench, auditPolicy},null,2)+"\n");
 console.log(`ecosystem=${integrations.length} integrations sdk=${sdk.length} adapters=${adapters.length} mcp=${Object.keys(servers).length}`);
 console.log("No secret values written; output is deterministic for identical source/config inputs.");

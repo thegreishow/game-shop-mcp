@@ -17,6 +17,14 @@ async function main(){
  assert.equal(planned.execution.status,"planned");assert.equal(planned.packet.mission.lane,"app");assert.ok(planned.packet.handoffs.length>0);assert.equal(planned.packet.project.project.source.kind,"github");
  const context=await missionControlContext("cruber");assert.equal(context.project.project.projectId,"cruber");assert.equal(context.brief.projectId,"cruber");assert.ok(context.brief.stack);assert.ok(context.brief.freshness);assert.ok(context.recentJobs.some(j=>j?.executionId===planned.execution.executionId));
  const cached=await missionProjectSourceSnapshot("cruber");assert.equal(cached.freshness.cached,true);invalidateMissionProjectSnapshot("cruber");const refreshed=await missionProjectSourceSnapshot("cruber");assert.equal(refreshed.freshness.cached,false);
+ const audit=await prepareMission({projectId:"watadash-game",brief:"Read-only browser game controls audit",phase:"audit",budgetUsd:0,permissions:{write:false,execute:false,deploy:false}});
+ assert.equal(audit.packet.handoffs.find(h=>h.target==="github")?.requiredScope,"gameshop.read");
+ assert.ok(!audit.packet.handoffs.some(h=>h.requiredScope==="gameshop.write"||h.requiredScope==="gameshop.deploy"));
+ assert.equal(audit.packet.permissions.execute,false);
+ assert.ok((audit.packet.route.stages as Array<{lane:string}>).every(stage=>stage.lane!=="runtime"));
+ const release=await prepareMission({projectId:"watadash-game",brief:"Release browser game",phase:"release",budgetUsd:0});
+ assert.equal(release.packet.handoffs.filter(h=>h.target==="github").at(-1)?.requiredScope,"gameshop.deploy");
+ assert.equal(release.packet.handoffs.find(h=>h.target==="github")?.requiredScope,"gameshop.write");
  const handoff=await dispatchMissionHandoff({executionId:planned.execution.executionId});assert.equal(handoff.executionId,planned.execution.executionId);assert.ok(handoff.handoff.target);
  await transitionMission({executionId:planned.execution.executionId,action:"qa"});
  await recordMissionVisualQa({projectId:"cruber",executionId:planned.execution.executionId,status:"passed",findings:["Smoke evidence"],consoleErrors:[],networkErrors:[],playwright:{status:"passed"}});
